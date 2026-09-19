@@ -131,4 +131,10 @@
     <sys:String x:Key="Section_EncryptConfig">Encryption &amp; Permissions</sys:String>
     <sys:String x:Key="Section_DecryptOptions">Decrypt Options</sys:String>
     <sys:String x:Key="Section_RepairConfig">Optimization Config</sys:String>
+
+    <!-- Top Engine Banner -->
+    <sys:String x:Key="Banner_EngineMissingPrompt">QPDF engine not found. Required for PDF operations:</sys:String>
+    <sys:String x:Key="Banner_DownloadAction">Download</sys:String>
+    <sys:String x:Key="Banner_BrowseAction">Browse...</sys:String>
+    <sys:String x:Key="Settings_DownloadEngine">Download / Reinstall Online</sys:String>
 </ResourceDictionary>

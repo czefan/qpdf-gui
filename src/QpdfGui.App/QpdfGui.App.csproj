@@ -22,7 +22,8 @@
     <ProjectReference Include="..\QpdfGui.Core\QpdfGui.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\..\runtimes\**\*" LinkBase="runtimes" CopyToOutputDirectory="PreserveNewest" />
+  <!-- 仅在本地开发调试模式时复制本地 runtimes 目录以便利开发；Release 发布包保持纯净解耦，由用户一键下载或指定 -->
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <None Include="$(MSBuildThisFileDirectory)..\..\runtimes\**" Link="runtimes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

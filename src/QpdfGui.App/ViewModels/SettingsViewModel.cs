@@ -82,6 +82,7 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly SettingsStore _settingsStore;
     private readonly IDialogService _dialogService;
     private readonly IUpdateService _updateService;
+    private readonly IQpdfDownloaderService _downloaderService;
 
     /// <summary>
     /// 当 QPDF 引擎状态（有效性、版本）发生刷新时的通知回调
@@ -265,14 +266,34 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasQpdfUpdate;
 
+    /// <summary>
+    /// 是否正在下载安装 QPDF 引擎
+    /// </summary>
+    [ObservableProperty]
+    private bool _isDownloadingEngine;
+
+    /// <summary>
+    /// 引擎下载百分比（0.0 ~ 1.0）
+    /// </summary>
+    [ObservableProperty]
+    private double _engineDownloadProgress;
+
+    /// <summary>
+    /// 引擎下载过程中的状态提示文本
+    /// </summary>
+    [ObservableProperty]
+    private string? _engineDownloadStatusText;
+
     public SettingsViewModel(
         SettingsStore settingsStore,
         IDialogService dialogService,
-        IUpdateService? updateService = null)
+        IUpdateService? updateService = null,
+        IQpdfDownloaderService? downloaderService = null)
     {
         _settingsStore = settingsStore;
         _dialogService = dialogService;
         _updateService = updateService ?? new UpdateService();
+        _downloaderService = downloaderService ?? new QpdfDownloaderService();
 
         _customQpdfPath = _settingsStore.Current.CustomQpdfPath;
         _defaultOutputDirectory = _settingsStore.Current.DefaultOutputDirectory;
@@ -431,6 +452,43 @@ public partial class SettingsViewModel : ViewModelBase
         _settingsStore.Current.CustomQpdfPath = null;
         _settingsStore.Save();
         await RefreshQpdfStatusAsync();
+    }
+
+    /// <summary>
+    /// 一键从 GitHub 在线下载并配置 QPDF 核心引擎
+    /// </summary>
+    [RelayCommand]
+    public async Task DownloadAndInstallEngineAsync()
+    {
+        if (IsDownloadingEngine) return;
+
+        IsDownloadingEngine = true;
+        EngineDownloadProgress = 0;
+        EngineDownloadStatusText = "正在连接 GitHub...";
+
+        var progress = new Progress<(double Percentage, string StatusMessage)>(p =>
+        {
+            EngineDownloadProgress = p.Percentage;
+            EngineDownloadStatusText = p.StatusMessage;
+        });
+
+        try
+        {
+            var exePath = await _downloaderService.DownloadAndInstallAsync(progress);
+            CustomQpdfPath = null; // 清除自定义路径以使用默认检测到的本地路径
+            _settingsStore.Current.CustomQpdfPath = null;
+            _settingsStore.Save();
+            await RefreshQpdfStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            EngineDownloadStatusText = $"下载失败: {ex.Message}";
+        }
+        finally
+        {
+            await Task.Delay(1500);
+            IsDownloadingEngine = false;
+        }
     }
 
     /// <summary>

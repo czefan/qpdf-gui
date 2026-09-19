@@ -191,6 +191,33 @@
                                             Content="{DynamicResource Settings_Reset}" Margin="8,0,0,0"
                                             Theme="{DynamicResource BorderlessButtonTheme}" />
                                 </Grid>
+
+                                <!-- 在线一键下载与进度区 -->
+                                <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="6" Padding="12,10" Margin="0,4,0,0">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{DynamicResource Settings_DownloadEngine}" FontSize="13" FontWeight="Medium" />
+                                                <TextBlock Text="从 GitHub Releases 官方源一键静默拉取并配置适配当前系统的预编译组件"
+                                                           FontSize="11.5" Foreground="{DynamicResource SemiColorText2}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DownloadAndInstallEngineCommand}"
+                                                    IsEnabled="{Binding !IsDownloadingEngine}"
+                                                    Content="{DynamicResource Banner_DownloadAction}"
+                                                    Theme="{DynamicResource SolidButtonTheme}"
+                                                    Classes="Primary"
+                                                    Padding="12,6" FontSize="12"
+                                                    VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <!-- 下载进度条 -->
+                                        <StackPanel Spacing="4" IsVisible="{Binding IsDownloadingEngine}">
+                                            <TextBlock Text="{Binding EngineDownloadStatusText}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" />
+                                            <ProgressBar Value="{Binding EngineDownloadProgress}" Minimum="0" Maximum="1" Height="4" CornerRadius="2" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Border>
 

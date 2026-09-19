@@ -61,6 +61,17 @@ public static partial class QpdfLocator
             return Path.GetFullPath(localNativePath);
         }
 
+        // 3. 用户 LocalAppData 独立安装目录
+        var localAppDataDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!string.IsNullOrEmpty(localAppDataDir))
+        {
+            var appDataNativePath = Path.Combine(localAppDataDir, "QpdfGui", "runtimes", rid, "native", exeName);
+            if (File.Exists(appDataNativePath))
+            {
+                return Path.GetFullPath(appDataNativePath);
+            }
+        }
+
         // 备选查找上一层或当前目录
         var sameDirPath = Path.Combine(baseDir, exeName);
         if (File.Exists(sameDirPath))

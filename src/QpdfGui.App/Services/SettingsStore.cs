@@ -34,15 +34,45 @@ public class AppSettings
 }
 
 /// <summary>
-/// 负责将 <see cref="AppSettings"/> 序列化并持久化存储至 AppData 目录的存储服务
+/// 负责将 <see cref="AppSettings"/> 序列化并持久化存储的服务。
+/// 采用“便携目录优先”策略：优先将 settings.json 存放在可执行文件同级目录；
+/// 若当前目录只读（如位于受限系统目录），则自动平滑回退至系统的 AppData 目录。
 /// </summary>
 public class SettingsStore
 {
-    private static readonly string SettingsFolder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "qpdf-gui");
+    private static readonly string SettingsFilePath = ResolveSettingsFilePath();
 
-    private static readonly string SettingsFilePath = Path.Combine(SettingsFolder, "settings.json");
+    private static string ResolveSettingsFilePath()
+    {
+        // 1. 优先尝试便携模式：应用程序所在根目录
+        var baseDir = AppContext.BaseDirectory;
+        var portablePath = Path.Combine(baseDir, "settings.json");
+
+        // 如果便携配置已经存在，或者当前目录具有写权限，直接使用便携路径
+        if (File.Exists(portablePath))
+        {
+            return portablePath;
+        }
+
+        try
+        {
+            var testFile = Path.Combine(baseDir, ".write_test");
+            File.WriteAllText(testFile, "test");
+            File.Delete(testFile);
+            return portablePath;
+        }
+        catch
+        {
+            // 当前目录没有写权限，回退到系统 AppData 目录
+        }
+
+        // 2. 回退模式：%APPDATA%/qpdf-gui/settings.json
+        var appDataFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "qpdf-gui");
+
+        return Path.Combine(appDataFolder, "settings.json");
+    }
 
     /// <summary>
     /// 当前生效的应用程序配置实例
@@ -83,9 +113,10 @@ public class SettingsStore
     {
         try
         {
-            if (!Directory.Exists(SettingsFolder))
+            var folder = Path.GetDirectoryName(SettingsFilePath);
+            if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
             {
-                Directory.CreateDirectory(SettingsFolder);
+                Directory.CreateDirectory(folder);
             }
 
             var json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });

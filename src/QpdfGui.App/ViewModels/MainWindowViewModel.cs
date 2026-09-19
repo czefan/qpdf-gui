@@ -69,6 +69,41 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsSettingsSelected => CurrentPage == SettingsVm;
 
     /// <summary>
+    /// QPDF 核心引擎是否缺失（未就绪且当前未处于下载中）
+    /// </summary>
+    [ObservableProperty]
+    private bool _isEngineMissing;
+
+    /// <summary>
+    /// 是否正在下载 QPDF 核心引擎
+    /// </summary>
+    [ObservableProperty]
+    private bool _isDownloadingEngine;
+
+    /// <summary>
+    /// 引擎下载百分比（0.0 ~ 1.0）
+    /// </summary>
+    [ObservableProperty]
+    private double _engineDownloadProgress;
+
+    /// <summary>
+    /// 引擎下载状态文本
+    /// </summary>
+    [ObservableProperty]
+    private string? _engineDownloadStatusText;
+
+    /// <summary>
+    /// 用户是否在本次会话中手动关闭了提示横幅
+    /// </summary>
+    [ObservableProperty]
+    private bool _isBannerDismissed;
+
+    /// <summary>
+    /// 是否展示顶部引导横幅（引擎缺失且用户未手动关闭，或者正在下载中）
+    /// </summary>
+    public bool ShowEngineBanner => (!SettingsVm.IsQpdfValid && !IsBannerDismissed) || IsDownloadingEngine;
+
+    /// <summary>
     /// 侧边栏主导航功能列表
     /// </summary>
     public ObservableCollection<NavigationItem> NavigationItems { get; } = [];
@@ -112,6 +147,32 @@ public partial class MainWindowViewModel : ViewModelBase
 
         SettingsItem = new NavigationItem("Nav_Settings", Symbol.Settings, SettingsVm);
 
+        // 监听引擎状态变化
+        SettingsVm.OnQpdfStatusChanged = () =>
+        {
+            IsEngineMissing = !SettingsVm.IsQpdfValid;
+            OnPropertyChanged(nameof(ShowEngineBanner));
+        };
+        IsEngineMissing = !SettingsVm.IsQpdfValid;
+
+        // 监听下载状态变化
+        SettingsVm.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.IsDownloadingEngine))
+            {
+                IsDownloadingEngine = SettingsVm.IsDownloadingEngine;
+                OnPropertyChanged(nameof(ShowEngineBanner));
+            }
+            else if (e.PropertyName == nameof(SettingsViewModel.EngineDownloadProgress))
+            {
+                EngineDownloadProgress = SettingsVm.EngineDownloadProgress;
+            }
+            else if (e.PropertyName == nameof(SettingsViewModel.EngineDownloadStatusText))
+            {
+                EngineDownloadStatusText = SettingsVm.EngineDownloadStatusText;
+            }
+        };
+
         // 语言变更时联动更新导航标题
         LocalizationManager.LanguageChanged += () =>
         {
@@ -127,6 +188,34 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _selectedNavigationItem = NavigationItems[0];
         _currentPage = _selectedNavigationItem.ViewModel;
+    }
+
+    /// <summary>
+    /// 一键在线下载安装引擎
+    /// </summary>
+    [RelayCommand]
+    public async Task DownloadEngineAsync()
+    {
+        await SettingsVm.DownloadAndInstallEngineAsync();
+    }
+
+    /// <summary>
+    /// 手动浏览指定引擎
+    /// </summary>
+    [RelayCommand]
+    public async Task BrowseEngineAsync()
+    {
+        await SettingsVm.BrowseCustomQpdfPath();
+    }
+
+    /// <summary>
+    /// 用户关闭顶部提示横幅
+    /// </summary>
+    [RelayCommand]
+    public void DismissBanner()
+    {
+        IsBannerDismissed = true;
+        OnPropertyChanged(nameof(ShowEngineBanner));
     }
 
     /// <summary>

@@ -22,6 +22,8 @@ Desktop.ini
 
 ## Output & Temp Artifacts
 scratch/
+settings.json
+dist*/
 
 ## Native Runtimes (fetch via tools/fetch-qpdf.ps1)
 runtimes/**/native/*

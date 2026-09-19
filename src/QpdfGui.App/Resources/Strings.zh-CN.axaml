@@ -131,4 +131,10 @@
     <sys:String x:Key="Section_EncryptConfig">加密与权限配置</sys:String>
     <sys:String x:Key="Section_DecryptOptions">解密选项</sys:String>
     <sys:String x:Key="Section_RepairConfig">优化配置</sys:String>
+
+    <!-- 顶部引擎引导横幅 -->
+    <sys:String x:Key="Banner_EngineMissingPrompt">未检测到 QPDF 核心引擎，无法处理 PDF 任务：</sys:String>
+    <sys:String x:Key="Banner_DownloadAction">一键下载</sys:String>
+    <sys:String x:Key="Banner_BrowseAction">指定路径...</sys:String>
+    <sys:String x:Key="Settings_DownloadEngine">一键在线下载 / 重装</sys:String>
 </ResourceDictionary>

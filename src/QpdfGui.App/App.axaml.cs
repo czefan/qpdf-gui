@@ -148,6 +148,7 @@ public partial class App : Application
         services.AddSingleton<SettingsStore>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IUpdateService, UpdateService>();
+        services.AddSingleton<IQpdfDownloaderService, QpdfDownloaderService>();
 
         services.AddSingleton<IQpdfService>(sp =>
         {
@@ -161,7 +162,7 @@ public partial class App : Application
         services.AddTransient<DecryptViewModel>();
         services.AddTransient<RotateViewModel>();
         services.AddTransient<RepairViewModel>();
-        services.AddTransient<SettingsViewModel>();
+        services.AddSingleton<SettingsViewModel>();
 
         services.AddSingleton<MainWindowViewModel>();
     }

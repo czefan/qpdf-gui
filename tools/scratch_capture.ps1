@@ -2,7 +2,7 @@ Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
 
 $rootDir = Split-Path -Parent $PSScriptRoot
-$exePath = Join-Path $rootDir "src\QpdfGui.App\bin\Debug\net10.0\QpdfGui.App.exe"
+$exePath = Join-Path $rootDir "src\QpdfGui.App\bin\Debug\net10.0\QpdfGui.exe"
 
 if (-not (Test-Path $exePath)) {
     Write-Host "Executable not found. Building project..."
