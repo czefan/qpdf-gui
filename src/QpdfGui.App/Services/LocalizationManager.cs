@@ -32,7 +32,8 @@ public static class LocalizationManager
 
         if (Application.Current == null) return;
 
-        var uri = new Uri($"avares://QpdfGui.App/Resources/Strings.{CurrentLanguage}.axaml");
+        var assemblyName = typeof(LocalizationManager).Assembly.GetName().Name;
+        var uri = new Uri($"avares://{assemblyName}/Resources/Strings.{CurrentLanguage}.axaml");
         var newDict = (ResourceDictionary)AvaloniaXamlLoader.Load(uri);
 
         // 卸载先前载入的语言字典，避免内存泄漏与键冲突

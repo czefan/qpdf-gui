@@ -2,6 +2,15 @@
 
 基于 .NET 10 与 Avalonia 12 构建的现代化跨平台 QPDF 图形化界面客户端。通过可视化操作调用 QPDF 引擎，提供 PDF 文档的合并、拆分、加密、解密、旋转与结构修复能力。
 
+## 下载与使用
+
+前往 [Releases 页面](https://github.com/czefan/qpdf-gui/releases) 下载最新压缩包，解压后双击 `QpdfGui.exe` 即可使用：
+
+| 版本 | 说明 |
+| :--- | :--- |
+| 🚀 **独立免装版 (推荐)** | 开箱即用，免装任何依赖（适合大多数用户） |
+| ⚡ **框架依赖版** | 体积极小（约 19MB），需电脑已安装 [.NET 10 运行时](https://dotnet.microsoft.com/download/dotnet/10.0) |
+
 ---
 
 ## 主要功能
@@ -53,7 +62,7 @@ qpdf-gui/
 
 ---
 
-## 快速开始
+## 本地开发
 
 ### 环境依赖
 
@@ -84,14 +93,9 @@ dotnet run --project src/QpdfGui.App
 dotnet test
 ```
 
-### 3. 版本发布
+### 3. CI/CD 发布
 
-推送版本标签即可触发 GitHub Actions 云端全自动构建、测试、打包并发布 GitHub Release：
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+推送 Git 标签（如 `v1.0.0`）即可由 GitHub Actions 全自动测试并构建上述两种 Release 发布包。
 
 ---
 
