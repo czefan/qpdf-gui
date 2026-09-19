@@ -1,0 +1,279 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:QpdfGui.App.ViewModels"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="QpdfGui.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20,18,20,24" Spacing="16" MaxWidth="960" HorizontalAlignment="Stretch">
+            <!-- 标题区 -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource Settings_Title}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="{DynamicResource Settings_Desc}" FontSize="13" Foreground="{DynamicResource SemiColorText2}" />
+            </StackPanel>
+
+            <!-- 二级分类导航 + 设置工作区（二级菜单收窄为 116px） -->
+            <Grid ColumnDefinitions="116,12,*" Margin="0,6,0,0">
+                <!-- 左侧二级菜单列表 -->
+                <Border Grid.Column="0" VerticalAlignment="Top">
+                    <StackPanel Spacing="3">
+                        <!-- 1. 常规偏好 -->
+                        <Button Command="{Binding SelectSectionCommand}" CommandParameter="General"
+                                Classes="NavButton" Classes.selected="{Binding IsGeneralSection}">
+                            <Grid ColumnDefinitions="3,8,Auto,8,*">
+                                <Border Grid.Column="0" Width="3" Height="14" CornerRadius="1.5"
+                                        Background="{DynamicResource SemiColorPrimary}"
+                                        IsVisible="{Binding IsGeneralSection}"
+                                        VerticalAlignment="Center" />
+                                <ic:SymbolIcon Grid.Column="2" Symbol="Options" FontSize="15" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{DynamicResource Settings_Nav_General}" FontSize="12.5" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+
+                        <!-- 2. 外观界面 -->
+                        <Button Command="{Binding SelectSectionCommand}" CommandParameter="Appearance"
+                                Classes="NavButton" Classes.selected="{Binding IsAppearanceSection}">
+                            <Grid ColumnDefinitions="3,8,Auto,8,*">
+                                <Border Grid.Column="0" Width="3" Height="14" CornerRadius="1.5"
+                                        Background="{DynamicResource SemiColorPrimary}"
+                                        IsVisible="{Binding IsAppearanceSection}"
+                                        VerticalAlignment="Center" />
+                                <ic:SymbolIcon Grid.Column="2" Symbol="DarkTheme" FontSize="15" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{DynamicResource Settings_Nav_Appearance}" FontSize="12.5" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+
+                        <!-- 3. QPDF 引擎 -->
+                        <Button Command="{Binding SelectSectionCommand}" CommandParameter="Engine"
+                                Classes="NavButton" Classes.selected="{Binding IsEngineSection}">
+                            <Grid ColumnDefinitions="3,8,Auto,8,*">
+                                <Border Grid.Column="0" Width="3" Height="14" CornerRadius="1.5"
+                                        Background="{DynamicResource SemiColorPrimary}"
+                                        IsVisible="{Binding IsEngineSection}"
+                                        VerticalAlignment="Center" />
+                                <ic:SymbolIcon Grid.Column="2" Symbol="Wrench" FontSize="15" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{DynamicResource Settings_Nav_Engine}" FontSize="12.5" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+
+                        <!-- 4. 关于与更新 -->
+                        <Button Command="{Binding SelectSectionCommand}" CommandParameter="About"
+                                Classes="NavButton" Classes.selected="{Binding IsAboutSection}">
+                            <Grid ColumnDefinitions="3,8,Auto,8,*">
+                                <Border Grid.Column="0" Width="3" Height="14" CornerRadius="1.5"
+                                        Background="{DynamicResource SemiColorPrimary}"
+                                        IsVisible="{Binding IsAboutSection}"
+                                        VerticalAlignment="Center" />
+                                <ic:SymbolIcon Grid.Column="2" Symbol="ArrowSync" FontSize="15" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{DynamicResource Settings_Nav_About}" FontSize="12.5" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- 右侧对应卡片内容 -->
+                <StackPanel Grid.Column="2" Spacing="16">
+                    <!-- 1. 常规偏好卡片 -->
+                    <StackPanel Spacing="16" IsVisible="{Binding IsGeneralSection}">
+                        <Border Classes="ContentCard">
+                            <StackPanel Spacing="14">
+                                <TextBlock Text="{DynamicResource Settings_OutputDir}" FontSize="14" FontWeight="SemiBold" />
+
+                                <RadioButton IsChecked="{Binding !UseCustomOutputDir}"
+                                             Command="{Binding SetSaveAlongsideSourceCommand}"
+                                             Content="{DynamicResource Settings_OutputDefault}" />
+
+                                <RadioButton IsChecked="{Binding UseCustomOutputDir}"
+                                             Content="{DynamicResource Settings_OutputCustom}" />
+
+                                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding UseCustomOutputDir}">
+                                    <TextBox Text="{Binding DefaultOutputDirectory}"
+                                             IsReadOnly="True"
+                                             Classes="clearButton" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Command="{Binding BrowseOutputDirectoryCommand}"
+                                             Content="{DynamicResource Settings_SelectFolder}" Margin="8,0,0,0" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 2. 外观与界面卡片 -->
+                    <StackPanel Spacing="16" IsVisible="{Binding IsAppearanceSection}">
+                        <Border Classes="ContentCard">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="{DynamicResource Settings_Appearance}" FontSize="14" FontWeight="SemiBold" />
+
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                                    <!-- 界面语言 -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,14">
+                                        <ic:SymbolIcon Symbol="LocalLanguage" FontSize="16" Foreground="{DynamicResource SemiColorText1}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource Settings_Language}" VerticalAlignment="Center" FontSize="13" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Row="0" Grid.Column="1"
+                                              ItemsSource="{Binding AvailableLanguages}"
+                                              SelectedItem="{Binding SelectedLanguage}"
+                                              Width="190" HorizontalAlignment="Left" Margin="0,0,0,14">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:LanguageOption">
+                                                <TextBlock Text="{Binding DisplayName}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <!-- 色彩主题 -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,14">
+                                        <ic:SymbolIcon Symbol="Color" FontSize="16" Foreground="{DynamicResource SemiColorText1}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource Settings_Theme}" VerticalAlignment="Center" FontSize="13" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Row="1" Grid.Column="1"
+                                              ItemsSource="{Binding AvailableThemes}"
+                                              SelectedItem="{Binding SelectedTheme}"
+                                              Width="190" HorizontalAlignment="Left" Margin="0,0,0,14">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ThemeOption">
+                                                <TextBlock Text="{Binding Label}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <!-- 界面缩放 -->
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,0">
+                                        <ic:SymbolIcon Symbol="ZoomIn" FontSize="16" Foreground="{DynamicResource SemiColorText1}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource Settings_UiScale}" VerticalAlignment="Center" FontSize="13" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Row="2" Grid.Column="1"
+                                              ItemsSource="{Binding AvailableScales}"
+                                              SelectedItem="{Binding SelectedScale}"
+                                              Width="190" HorizontalAlignment="Left">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:UiScaleOption">
+                                                <TextBlock Text="{Binding Label}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 3. QPDF 运行引擎卡片 -->
+                    <StackPanel Spacing="16" IsVisible="{Binding IsEngineSection}">
+                        <!-- 引擎状态与路径管理 -->
+                        <Border Classes="ContentCard">
+                            <StackPanel Spacing="14">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="{DynamicResource Settings_Engine}" FontSize="14" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding ResolvedQpdfPath, FallbackValue='未配置'}"
+                                                   FontSize="12" Foreground="{DynamicResource SemiColorText2}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <!-- 状态徽章 -->
+                                    <Border Grid.Column="1" Background="{DynamicResource SemiColorFill0}"
+                                            CornerRadius="12" Padding="10,4" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Ellipse Width="6" Height="6" Fill="#52C41A" IsVisible="{Binding IsQpdfValid}" />
+                                            <Ellipse Width="6" Height="6" Fill="#FAAD14" IsVisible="{Binding !IsQpdfValid}" />
+                                            <TextBlock Text="{Binding QpdfVersion}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Text="{DynamicResource Settings_CustomPath}" FontSize="12.5" Foreground="{DynamicResource SemiColorText1}" Margin="0,4,0,0" />
+                                <Grid ColumnDefinitions="*,Auto,Auto">
+                                    <TextBox Text="{Binding CustomQpdfPath}"
+                                             PlaceholderText="{DynamicResource Settings_CustomPathPlaceholder}"
+                                             Classes="clearButton" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" Command="{Binding BrowseCustomQpdfPathCommand}"
+                                            Content="{DynamicResource Output_Browse}" Margin="8,0,0,0" />
+                                    <Button Grid.Column="2" Command="{Binding ResetQpdfPathCommand}"
+                                            Content="{DynamicResource Settings_Reset}" Margin="8,0,0,0"
+                                            Theme="{DynamicResource BorderlessButtonTheme}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- QPDF 官方版本更新检测卡片 -->
+                        <Border Classes="ContentCard">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource Settings_CheckQpdfUpdate}" FontSize="14" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding QpdfUpdateStatusMessage, FallbackValue='检测官方 GitHub 最新发布的 QPDF 二进制版本。'}"
+                                                   FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Command="{Binding CheckQpdfUpdateCommand}"
+                                            Content="{DynamicResource Settings_CheckUpdate}"
+                                            IsEnabled="{Binding !IsCheckingQpdfUpdate}"
+                                            VerticalAlignment="Center" />
+                                </Grid>
+
+                                <Button Command="{Binding OpenQpdfReleasePageCommand}"
+                                        Content="{DynamicResource Settings_GoToRelease}"
+                                        IsVisible="{Binding HasQpdfUpdate}"
+                                        Theme="{DynamicResource BorderlessButtonTheme}"
+                                        HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 4. 关于与更新卡片 -->
+                    <StackPanel Spacing="16" IsVisible="{Binding IsAboutSection}">
+                        <!-- 软件当前版本与检查更新卡片 -->
+                        <Border Classes="ContentCard">
+                            <StackPanel Spacing="16">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                                        <!-- 品牌主徽标（从左上角移至关于卡片） -->
+                                        <Border Width="46" Height="46" Background="{DynamicResource SemiColorPrimaryLight}" CornerRadius="10" VerticalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="DocumentPdf" FontSize="26" Foreground="{DynamicResource SemiColorPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Spacing="4" VerticalAlignment="Center">
+                                            <TextBlock Text="QPDF GUI 桌面端" FontSize="16" FontWeight="SemiBold" />
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{DynamicResource Settings_AppVersion}" FontSize="12.5" Foreground="{DynamicResource SemiColorText2}" />
+                                                <TextBlock Text="{Binding AppVersion}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource SemiColorPrimary}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Command="{Binding CheckAppUpdateCommand}"
+                                            Content="{DynamicResource Settings_CheckUpdate}"
+                                            IsEnabled="{Binding !IsCheckingAppUpdate}"
+                                            VerticalAlignment="Center" />
+                                </Grid>
+
+                                <!-- 更新检测反馈信息 -->
+                                <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="6" Padding="12,8"
+                                        IsVisible="{Binding AppUpdateStatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding AppUpdateStatusMessage}" FontSize="12.5" VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Command="{Binding OpenAppReleasePageCommand}"
+                                                Content="{DynamicResource Settings_GoToRelease}"
+                                                IsVisible="{Binding HasAppUpdate}"
+                                                Theme="{DynamicResource BorderlessButtonTheme}" Margin="8,0,0,0" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 开源协议与项目信息卡片 -->
+                        <Border Classes="ContentCard">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="开源主页与说明" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="QPDF GUI 是基于 Avalonia UI 与 .NET 10 构建的现代化跨平台桌面应用，基于底层权威 QPDF 引擎提供极速、无损的 PDF 批处理能力。"
+                                           FontSize="12.5" Foreground="{DynamicResource SemiColorText2}" TextWrapping="Wrap" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="GitHub 开放源代码仓库" VerticalAlignment="Center" FontSize="13" />
+                                    <Button Grid.Column="1" Command="{Binding OpenProjectHomePageCommand}"
+                                            Content="{DynamicResource Settings_OpenHomepage}"
+                                            Theme="{DynamicResource BorderlessButtonTheme}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

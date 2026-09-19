@@ -1,0 +1,134 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+    <!-- Navigation -->
+    <sys:String x:Key="Nav_Merge">Merge</sys:String>
+    <sys:String x:Key="Nav_Split">Split</sys:String>
+    <sys:String x:Key="Nav_Encrypt">Encrypt</sys:String>
+    <sys:String x:Key="Nav_Decrypt">Decrypt</sys:String>
+    <sys:String x:Key="Nav_Rotate">Rotate</sys:String>
+    <sys:String x:Key="Nav_Repair">Repair</sys:String>
+    <sys:String x:Key="Nav_Settings">Settings</sys:String>
+
+    <!-- Common Input & Info -->
+    <sys:String x:Key="Input_SelectFile">Select PDF File</sys:String>
+    <sys:String x:Key="Input_DropHint">Click or drag &amp; drop PDF here</sys:String>
+    <sys:String x:Key="Input_ChangeFile">Change File</sys:String>
+    <sys:String x:Key="Input_Encrypted">Encrypted</sys:String>
+    <sys:String x:Key="Input_PasswordPrompt">Password required to open:</sys:String>
+    <sys:String x:Key="Input_PasswordPlaceholder">Enter document password and press Enter</sys:String>
+
+    <!-- Output & Actions -->
+    <sys:String x:Key="Output_Label">Save Settings</sys:String>
+    <sys:String x:Key="Output_DirectoryLabel">Save Folder:</sys:String>
+    <sys:String x:Key="Output_FileNameLabel">File Name:</sys:String>
+    <sys:String x:Key="Output_FileNamePrefixLabel">File Prefix:</sys:String>
+    <sys:String x:Key="Output_BrowseFolder">Browse Folder</sys:String>
+    <sys:String x:Key="Output_Browse">Browse...</sys:String>
+    <sys:String x:Key="Output_DefaultHint">Saved alongside source file by default</sys:String>
+    <sys:String x:Key="Output_DefaultDirHint">Save in source directory (default)</sys:String>
+    <sys:String x:Key="Btn_Cancel">Cancel</sys:String>
+    <sys:String x:Key="Btn_OpenFile">Open File</sys:String>
+    <sys:String x:Key="Btn_OpenFolder">Open Folder</sys:String>
+    <sys:String x:Key="Btn_CopyCommand">Copy Command</sys:String>
+    <sys:String x:Key="Status_Success">Operation completed successfully</sys:String>
+    <sys:String x:Key="Status_Processing">Processing...</sys:String>
+    <sys:String x:Key="Status_Failed">Operation failed</sys:String>
+
+    <!-- Merge -->
+    <sys:String x:Key="Merge_Title">Merge Multiple PDFs</sys:String>
+    <sys:String x:Key="Merge_Desc">Combine multiple PDF files into one, reorder items, and optionally select custom page ranges for each file.</sys:String>
+    <sys:String x:Key="Merge_AddFiles">Add Files</sys:String>
+    <sys:String x:Key="Merge_Clear">Clear</sys:String>
+    <sys:String x:Key="Merge_PageRange">Pages:</sys:String>
+    <sys:String x:Key="Merge_Start">Start Merge</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Title">Advanced Merge Rules</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Optional">(Optional)</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Reset">Reset</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Placeholder">Leave blank to merge in order. For custom slicing: 1.1-1.11, 2.1, 1.8-1.55</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Tip">💡 Syntax: [FileIndex.PageRange], supports arbitrary cross-file slicing and interleaving (e.g. 1.1-11, 2.1, 1.8-55)</sys:String>
+
+    <!-- Split -->
+    <sys:String x:Key="Split_Title">Split PDF</sys:String>
+    <sys:String x:Key="Split_Desc">Split a PDF document into multiple separate files by custom ranges or fixed page count.</sys:String>
+    <sys:String x:Key="Split_BaseRange">Output Range:</sys:String>
+    <sys:String x:Key="Split_BaseRangeTip">Target range to split. Defaults to full document, e.g. 10-50</sys:String>
+    <sys:String x:Key="Split_ModeRange">Split by specified ranges</sys:String>
+    <sys:String x:Key="Split_ModeFixed">Split by fixed page count</sys:String>
+    <sys:String x:Key="Split_RangeExpr">Split Ranges:</sys:String>
+    <sys:String x:Key="Split_RangeTip">Separate ranges by commas to generate files, e.g. 1-2, 3-5, 6-10 (blank for all)</sys:String>
+    <sys:String x:Key="Split_FixedCount">Pages per split file:</sys:String>
+    <sys:String x:Key="Split_Start">Start Split</sys:String>
+
+    <!-- Encrypt -->
+    <sys:String x:Key="Encrypt_Title">Encrypt &amp; Protect</sys:String>
+    <sys:String x:Key="Encrypt_Desc">Protect PDF with AES-256 encryption, set open passwords, and restrict printing, copying, and modification.</sys:String>
+    <sys:String x:Key="Encrypt_UserPwd">Open Password (Optional):</sys:String>
+    <sys:String x:Key="Encrypt_UserPwdHint">Required when opening the document</sys:String>
+    <sys:String x:Key="Encrypt_OwnerPwd">Permission Password (Optional):</sys:String>
+    <sys:String x:Key="Encrypt_OwnerPwdHint">Required to change document permissions</sys:String>
+    <sys:String x:Key="Encrypt_PermTitle">Permissions Allowed:</sys:String>
+    <sys:String x:Key="Encrypt_AllowPrint">Allow Printing</sys:String>
+    <sys:String x:Key="Encrypt_AllowModify">Allow Modifications</sys:String>
+    <sys:String x:Key="Encrypt_AllowCopy">Allow Copying Text &amp; Graphics</sys:String>
+    <sys:String x:Key="Encrypt_AllowAnnot">Allow Annotations &amp; Forms</sys:String>
+    <sys:String x:Key="Encrypt_Start">Start Encrypt</sys:String>
+
+    <!-- Decrypt -->
+    <sys:String x:Key="Decrypt_Title">Decrypt &amp; Remove Restrictions</sys:String>
+    <sys:String x:Key="Decrypt_Desc">Remove passwords and permission restrictions to create an unrestricted standard PDF document.</sys:String>
+    <sys:String x:Key="Decrypt_Password">Document Password:</sys:String>
+    <sys:String x:Key="Decrypt_PasswordHint">Leave empty if the document only has permission restrictions</sys:String>
+    <sys:String x:Key="Decrypt_Start">Start Decrypt</sys:String>
+
+    <!-- Rotate -->
+    <sys:String x:Key="Rotate_Title">Rotate Pages</sys:String>
+    <sys:String x:Key="Rotate_Desc">Rotate all or specified pages clockwise, counter-clockwise, or 180 degrees.</sys:String>
+    <sys:String x:Key="Rotate_Angle">Rotation Angle:</sys:String>
+    <sys:String x:Key="Rotate_CW90">Clockwise 90° (+90)</sys:String>
+    <sys:String x:Key="Rotate_CCW90">Counter-clockwise 90° (-90)</sys:String>
+    <sys:String x:Key="Rotate_180">Rotate 180°</sys:String>
+    <sys:String x:Key="Rotate_Range">Page Range:</sys:String>
+    <sys:String x:Key="Rotate_RangeHint">Default 1-z (all pages), or specify e.g. 1, 3-5</sys:String>
+    <sys:String x:Key="Rotate_Start">Start Rotate</sys:String>
+
+    <!-- Repair -->
+    <sys:String x:Key="Repair_Title">Repair &amp; Web Optimize</sys:String>
+    <sys:String x:Key="Repair_Desc">Rebuild object streams to fix corrupted PDF structures and linearize for fast web view.</sys:String>
+    <sys:String x:Key="Repair_Linearize">Enable linearization (Fast Web View)</sys:String>
+    <sys:String x:Key="Repair_Start">Start Repair</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="Settings_Title">Preferences</sys:String>
+    <sys:String x:Key="Settings_Desc">Manage QPDF engine binary path, default output rules, language, and color theme.</sys:String>
+    <sys:String x:Key="Settings_Engine">QPDF Engine</sys:String>
+    <sys:String x:Key="Settings_CustomPath">Custom QPDF binary path:</sys:String>
+    <sys:String x:Key="Settings_CustomPathPlaceholder">Leave empty to auto-detect from runtimes or PATH</sys:String>
+    <sys:String x:Key="Settings_Reset">Reset Default</sys:String>
+    <sys:String x:Key="Settings_OutputDir">Default Output Directory</sys:String>
+    <sys:String x:Key="Settings_OutputDefault">Save alongside source PDF (Default)</sys:String>
+    <sys:String x:Key="Settings_OutputCustom">Save to designated directory</sys:String>
+    <sys:String x:Key="Settings_SelectFolder">Select Folder...</sys:String>
+    <sys:String x:Key="Settings_Nav_General">General</sys:String>
+    <sys:String x:Key="Settings_Nav_Appearance">Appearance</sys:String>
+    <sys:String x:Key="Settings_Nav_Engine">QPDF Engine</sys:String>
+    <sys:String x:Key="Settings_Nav_About">About &amp; Updates</sys:String>
+    <sys:String x:Key="Settings_CheckUpdate">Check for Updates</sys:String>
+    <sys:String x:Key="Settings_CheckQpdfUpdate">Check Engine Updates</sys:String>
+    <sys:String x:Key="Settings_GoToRelease">Open Release Page</sys:String>
+    <sys:String x:Key="Settings_OpenHomepage">Visit Project Home</sys:String>
+    <sys:String x:Key="Settings_AppVersion">App Version:</sys:String>
+    <sys:String x:Key="Settings_EngineVersion">Engine Version:</sys:String>
+    <sys:String x:Key="Settings_Appearance">Appearance</sys:String>
+    <sys:String x:Key="Settings_Language">Language</sys:String>
+    <sys:String x:Key="Settings_Theme">Color Theme</sys:String>
+    <sys:String x:Key="Settings_UiScale">UI Scaling</sys:String>
+    <sys:String x:Key="Settings_ThemeDefault">System Default</sys:String>
+    <sys:String x:Key="Settings_ThemeLight">Light</sys:String>
+    <sys:String x:Key="Settings_ThemeDark">Dark</sys:String>
+    <sys:String x:Key="Section_InputList">Input Document List</sys:String>
+    <sys:String x:Key="Section_SplitOptions">Split Options</sys:String>
+    <sys:String x:Key="Section_EncryptConfig">Encryption &amp; Permissions</sys:String>
+    <sys:String x:Key="Section_DecryptOptions">Decrypt Options</sys:String>
+    <sys:String x:Key="Section_RepairConfig">Optimization Config</sys:String>
+</ResourceDictionary>

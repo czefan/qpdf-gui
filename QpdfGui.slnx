@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/QpdfGui.App/QpdfGui.App.csproj" />
+    <Project Path="src/QpdfGui.Core/QpdfGui.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/QpdfGui.Core.Tests/QpdfGui.Core.Tests.csproj" />
+  </Folder>
+</Solution>

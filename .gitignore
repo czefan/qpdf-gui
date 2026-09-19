@@ -1,0 +1,28 @@
+## .NET Core
+[Bb]in/
+[Oo]bj/
+publish/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+.vscode/
+
+## Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## Output & Temp Artifacts
+scratch/
+
+## Native Runtimes (fetch via tools/fetch-qpdf.ps1)
+runtimes/**/native/*
+!runtimes/**/native/.gitkeep

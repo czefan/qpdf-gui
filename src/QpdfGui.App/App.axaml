@@ -1,0 +1,179 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:semi="https://irihi.tech/semi"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="QpdfGui.App.App"
+             RequestedThemeVariant="Default">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F0F2F5" />
+                    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F0F2F5" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#F7F8FA" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#E1E4E8" />
+                    <SolidColorBrush x:Key="BadgeSuccessBackground" Color="#E8FFEA" />
+                    <SolidColorBrush x:Key="BadgeSuccessForeground" Color="#00B42A" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#18181B" />
+                    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#202024" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#232328" />
+                    <SolidColorBrush x:Key="CardBorderBrush" Color="#333338" />
+                    <SolidColorBrush x:Key="BadgeSuccessBackground" Color="#163820" />
+                    <SolidColorBrush x:Key="BadgeSuccessForeground" Color="#27C346" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <semi:SemiTheme Locale="zh-CN" />
+
+        <!-- 全局卡片规范 -->
+        <Style Selector="Border.ContentCard">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="20,16" />
+        </Style>
+
+        <!-- 内部拖放区域（融入卡片，无多余边框，杜绝双重嵌套框） -->
+        <Style Selector="Border.DropZone">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Border.DropZone:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill1}" />
+        </Style>
+
+        <!-- 虚线区内部透明点击按钮（彻底消除实体灰色背景框） -->
+        <Style Selector="Button.GhostDropZone">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="20,24" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="Button.GhostDropZone:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <!-- 侧栏导航项规范（图标在上，文字在下，宽 52 x 高 50） -->
+        <Style Selector="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Width" Value="52" />
+            <Setter Property="Height" Value="50" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,3" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText1}" />
+        </Style>
+        <Style Selector="ListBoxItem:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText0}" />
+        </Style>
+        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <!-- 选中态背景采用与临时高亮一致的柔和微底（SemiColorFill0） -->
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+        </Style>
+        <Style Selector="ListBoxItem:selected ic|SymbolIcon">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+        </Style>
+
+        <!-- 侧栏底部导航按钮样式（宽 52 x 高 50，与 ListBoxItem 规范 100% 像素级对齐） -->
+        <Style Selector="Button.CompactNavButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="52" />
+            <Setter Property="Height" Value="50" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText1}" />
+        </Style>
+        <Style Selector="Button.CompactNavButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.CompactNavButton:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText0}" />
+        </Style>
+        <Style Selector="Button.CompactNavButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+        </Style>
+        <Style Selector="Button.CompactNavButton.selected">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.CompactNavButton.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+        </Style>
+        <Style Selector="Button.CompactNavButton.selected ic|SymbolIcon">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+        </Style>
+
+        <!-- 二级菜单导航按钮样式（横向排列） -->
+        <Style Selector="Button.NavButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText1}" />
+        </Style>
+        <Style Selector="Button.NavButton /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.NavButton:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText0}" />
+        </Style>
+        <Style Selector="Button.NavButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+        </Style>
+        <Style Selector="Button.NavButton.selected">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorText0}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.NavButton.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SemiColorFill0}" />
+        </Style>
+        <Style Selector="Button.NavButton.selected ic|SymbolIcon">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorPrimary}" />
+        </Style>
+
+        <!-- 常规次级操作按钮（添加文件、浏览...等）字重保持常规 Normal，不加粗 -->
+        <Style Selector="Button:not(.Primary)">
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+        <Style Selector="Button:not(.Primary) TextBlock">
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+
+        <Style Selector="ic|SymbolIcon">
+            <Setter Property="Foreground" Value="{Binding $parent[ContentControl].Foreground, FallbackValue={DynamicResource SemiColorText0}}" />
+        </Style>
+        <Style Selector="Button ic|SymbolIcon">
+            <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground, FallbackValue={DynamicResource SemiColorText0}}" />
+        </Style>
+    </Application.Styles>
+</Application>

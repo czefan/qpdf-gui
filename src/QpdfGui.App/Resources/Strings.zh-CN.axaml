@@ -1,0 +1,134 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+    <!-- 导航 -->
+    <sys:String x:Key="Nav_Merge">合并</sys:String>
+    <sys:String x:Key="Nav_Split">拆分</sys:String>
+    <sys:String x:Key="Nav_Encrypt">加密</sys:String>
+    <sys:String x:Key="Nav_Decrypt">解密</sys:String>
+    <sys:String x:Key="Nav_Rotate">旋转</sys:String>
+    <sys:String x:Key="Nav_Repair">修复</sys:String>
+    <sys:String x:Key="Nav_Settings">设置</sys:String>
+
+    <!-- 通用输入与文件信息 -->
+    <sys:String x:Key="Input_SelectFile">选择 PDF 文件</sys:String>
+    <sys:String x:Key="Input_DropHint">点击或将 PDF 文件拖拽至此</sys:String>
+    <sys:String x:Key="Input_ChangeFile">更换文件</sys:String>
+    <sys:String x:Key="Input_Encrypted">已加密</sys:String>
+    <sys:String x:Key="Input_PasswordPrompt">该文件需要密码打开：</sys:String>
+    <sys:String x:Key="Input_PasswordPlaceholder">请输入文档打开密码并回车确认</sys:String>
+
+    <!-- 输出与操作 -->
+    <sys:String x:Key="Output_Label">保存设置</sys:String>
+    <sys:String x:Key="Output_DirectoryLabel">保存目录：</sys:String>
+    <sys:String x:Key="Output_FileNameLabel">输出名称：</sys:String>
+    <sys:String x:Key="Output_FileNamePrefixLabel">名称前缀：</sys:String>
+    <sys:String x:Key="Output_BrowseFolder">选择文件夹</sys:String>
+    <sys:String x:Key="Output_Browse">浏览...</sys:String>
+    <sys:String x:Key="Output_DefaultHint">留空默认保存在源文件同级目录并自动编号</sys:String>
+    <sys:String x:Key="Output_DefaultDirHint">保存至源文件同级目录（默认）</sys:String>
+    <sys:String x:Key="Btn_Cancel">取消</sys:String>
+    <sys:String x:Key="Btn_OpenFile">打开文件</sys:String>
+    <sys:String x:Key="Btn_OpenFolder">打开目录</sys:String>
+    <sys:String x:Key="Btn_CopyCommand">复制命令</sys:String>
+    <sys:String x:Key="Status_Success">处理成功完成</sys:String>
+    <sys:String x:Key="Status_Processing">正在处理中...</sys:String>
+    <sys:String x:Key="Status_Failed">处理失败</sys:String>
+
+    <!-- 合并 -->
+    <sys:String x:Key="Merge_Title">合并多个 PDF</sys:String>
+    <sys:String x:Key="Merge_Desc">添加多个 PDF 文件，自由调整排列顺序，并可为各文件指定抽取的页码范围。</sys:String>
+    <sys:String x:Key="Merge_AddFiles">添加文件</sys:String>
+    <sys:String x:Key="Merge_Clear">清空列表</sys:String>
+    <sys:String x:Key="Merge_PageRange">提取页码：</sys:String>
+    <sys:String x:Key="Merge_Start">开始合并</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Title">高级编排规则</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Optional">（可选）</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Reset">恢复默认</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Placeholder">留空默认按列表顺序合并全部页面。如需交叉编排可输入：1.1-1.11, 2.1, 1.8-1.55</sys:String>
+    <sys:String x:Key="Merge_CustomRule_Tip">💡 规则语法：[文件序号.页码范围]，支持跨文件任意交叉抽取与重复编排（如 1.1-11, 2.1, 1.8-55）</sys:String>
+
+    <!-- 拆分 -->
+    <sys:String x:Key="Split_Title">拆分 PDF</sys:String>
+    <sys:String x:Key="Split_Desc">将 PDF 文档按指定页码范围切分为多个独立文件，或按固定页数连续切分。</sys:String>
+    <sys:String x:Key="Split_BaseRange">输出范围：</sys:String>
+    <sys:String x:Key="Split_BaseRangeTip">切分的作用范围，默认全本。可指定局部范围如 10-50</sys:String>
+    <sys:String x:Key="Split_ModeRange">按指定范围切分为多个文件</sys:String>
+    <sys:String x:Key="Split_ModeFixed">按固定页数连续切分</sys:String>
+    <sys:String x:Key="Split_RangeExpr">拆分范围列表：</sys:String>
+    <sys:String x:Key="Split_RangeTip">输入用逗号分隔的范围生成多个文件，如 1-2, 3-5, 6-10（留空默认全本）</sys:String>
+    <sys:String x:Key="Split_FixedCount">每个文件包含页数：</sys:String>
+    <sys:String x:Key="Split_Start">开始拆分</sys:String>
+
+    <!-- 加密 -->
+    <sys:String x:Key="Encrypt_Title">加密与限制</sys:String>
+    <sys:String x:Key="Encrypt_Desc">采用高强度 AES-256 算法，支持设置打开密码以及打印、复制、修改等精细权限限制。</sys:String>
+    <sys:String x:Key="Encrypt_UserPwd">打开密码（可选）：</sys:String>
+    <sys:String x:Key="Encrypt_UserPwdHint">若设置，打开 PDF 时必须输入此密码</sys:String>
+    <sys:String x:Key="Encrypt_OwnerPwd">管理/权限密码（可选）：</sys:String>
+    <sys:String x:Key="Encrypt_OwnerPwdHint">用于防止未经授权修改权限设置</sys:String>
+    <sys:String x:Key="Encrypt_PermTitle">允许的操作权限：</sys:String>
+    <sys:String x:Key="Encrypt_AllowPrint">允许打印文档</sys:String>
+    <sys:String x:Key="Encrypt_AllowModify">允许修改文档内容</sys:String>
+    <sys:String x:Key="Encrypt_AllowCopy">允许复制文字与图像</sys:String>
+    <sys:String x:Key="Encrypt_AllowAnnot">允许添加批注与表单填写</sys:String>
+    <sys:String x:Key="Encrypt_Start">开始加密</sys:String>
+
+    <!-- 解密 -->
+    <sys:String x:Key="Decrypt_Title">解密与解除限制</sys:String>
+    <sys:String x:Key="Decrypt_Desc">移除 PDF 的打开密码或打印、复制、编辑等权限限制，生成无限制的普通文档。</sys:String>
+    <sys:String x:Key="Decrypt_Password">文档密码：</sys:String>
+    <sys:String x:Key="Decrypt_PasswordHint">若文件仅限制了权限而无打开密码，直接留空即可</sys:String>
+    <sys:String x:Key="Decrypt_Start">开始解密</sys:String>
+
+    <!-- 旋转 -->
+    <sys:String x:Key="Rotate_Title">页面旋转</sys:String>
+    <sys:String x:Key="Rotate_Desc">对文档全部或指定页面进行顺时针、逆时针或 180° 翻转。</sys:String>
+    <sys:String x:Key="Rotate_Angle">旋转方向：</sys:String>
+    <sys:String x:Key="Rotate_CW90">顺时针 90° (+90)</sys:String>
+    <sys:String x:Key="Rotate_CCW90">逆时针 90° (-90)</sys:String>
+    <sys:String x:Key="Rotate_180">旋转 180°</sys:String>
+    <sys:String x:Key="Rotate_Range">生效页码范围：</sys:String>
+    <sys:String x:Key="Rotate_RangeHint">默认 1-z（全部页面），可指定如 1, 3-5</sys:String>
+    <sys:String x:Key="Rotate_Start">开始旋转</sys:String>
+
+    <!-- 修复 -->
+    <sys:String x:Key="Repair_Title">修复与 Web 优化</sys:String>
+    <sys:String x:Key="Repair_Desc">重新构建对象流以修复损坏的语法结构，并生成便于快速 Web 浏览的线性化 PDF。</sys:String>
+    <sys:String x:Key="Repair_Linearize">启用线性化（Linearize，提升网页加载速度）</sys:String>
+    <sys:String x:Key="Repair_Start">开始修复</sys:String>
+
+    <!-- 设置 -->
+    <sys:String x:Key="Settings_Title">首选项设置</sys:String>
+    <sys:String x:Key="Settings_Desc">管理 QPDF 引擎路径、默认保存规则及界面语言与主题外观。</sys:String>
+    <sys:String x:Key="Settings_Engine">QPDF 运行引擎</sys:String>
+    <sys:String x:Key="Settings_CustomPath">指定 QPDF 可执行文件路径：</sys:String>
+    <sys:String x:Key="Settings_CustomPathPlaceholder">留空则自动检测 runtimes 目录或 PATH 环境变量</sys:String>
+    <sys:String x:Key="Settings_Reset">恢复内置</sys:String>
+    <sys:String x:Key="Settings_OutputDir">默认输出目录</sys:String>
+    <sys:String x:Key="Settings_OutputDefault">保存在源文件同级目录（默认）</sys:String>
+    <sys:String x:Key="Settings_OutputCustom">保存在指定目录</sys:String>
+    <sys:String x:Key="Settings_SelectFolder">选择文件夹...</sys:String>
+    <sys:String x:Key="Settings_Nav_General">常规偏好</sys:String>
+    <sys:String x:Key="Settings_Nav_Appearance">外观界面</sys:String>
+    <sys:String x:Key="Settings_Nav_Engine">QPDF 引擎</sys:String>
+    <sys:String x:Key="Settings_Nav_About">关于与更新</sys:String>
+    <sys:String x:Key="Settings_CheckUpdate">检查更新</sys:String>
+    <sys:String x:Key="Settings_CheckQpdfUpdate">检查引擎更新</sys:String>
+    <sys:String x:Key="Settings_GoToRelease">前往发布页</sys:String>
+    <sys:String x:Key="Settings_OpenHomepage">访问项目主页</sys:String>
+    <sys:String x:Key="Settings_AppVersion">软件版本：</sys:String>
+    <sys:String x:Key="Settings_EngineVersion">引擎版本：</sys:String>
+    <sys:String x:Key="Settings_Appearance">个性化外观</sys:String>
+    <sys:String x:Key="Settings_Language">界面语言</sys:String>
+    <sys:String x:Key="Settings_Theme">色彩主题</sys:String>
+    <sys:String x:Key="Settings_UiScale">界面缩放</sys:String>
+    <sys:String x:Key="Settings_ThemeDefault">跟随系统</sys:String>
+    <sys:String x:Key="Settings_ThemeLight">浅色模式</sys:String>
+    <sys:String x:Key="Settings_ThemeDark">深色模式</sys:String>
+    <sys:String x:Key="Section_InputList">输入文档列表</sys:String>
+    <sys:String x:Key="Section_SplitOptions">拆分选项</sys:String>
+    <sys:String x:Key="Section_EncryptConfig">加密与权限配置</sys:String>
+    <sys:String x:Key="Section_DecryptOptions">解密选项</sys:String>
+    <sys:String x:Key="Section_RepairConfig">优化配置</sys:String>
+</ResourceDictionary>

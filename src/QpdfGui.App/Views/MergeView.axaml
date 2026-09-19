@@ -1,0 +1,221 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:QpdfGui.App.ViewModels.Tools"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="QpdfGui.App.Views.MergeView"
+             x:DataType="tools:MergeViewModel">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,24,28,32" Spacing="16" MaxWidth="760" HorizontalAlignment="Stretch">
+            <!-- 标题区 -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource Merge_Title}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="{DynamicResource Merge_Desc}" FontSize="13" Foreground="{DynamicResource SemiColorText2}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- 1. 输入文档列表卡片 -->
+            <Border Classes="ContentCard">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <TextBlock Text="{DynamicResource Section_InputList}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Command="{Binding AddFilesCommand}" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Add" FontSize="14" />
+                                <TextBlock Text="{DynamicResource Merge_AddFiles}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="2" Command="{Binding ClearFilesCommand}"
+                                Content="{DynamicResource Merge_Clear}"
+                                Theme="{DynamicResource BorderlessButtonTheme}"
+                                IsVisible="{Binding Files.Count}" />
+                    </Grid>
+
+                    <!-- 未添加文件时的单层虚线拖拽热区 -->
+                    <Border Classes="DropZone" IsVisible="{Binding !Files.Count}">
+                        <Button Command="{Binding AddFilesCommand}" Classes="GhostDropZone">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ic:SymbolIcon Symbol="DocumentMultiple" FontSize="30" Foreground="{DynamicResource SemiColorPrimary}" />
+                                <TextBlock Text="{DynamicResource Input_DropHint}" FontSize="13.5" FontWeight="Medium" />
+                            </StackPanel>
+                        </Button>
+                    </Border>
+
+                    <!-- 已添加的文件列表项 -->
+                    <ItemsControl ItemsSource="{Binding Files}" IsVisible="{Binding Files.Count}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="tools:MergeFileItem">
+                                <Border Background="{DynamicResource DropZoneBackgroundBrush}"
+                                        BorderBrush="{DynamicResource CardBorderBrush}"
+                                        BorderThickness="1" CornerRadius="6"
+                                        Padding="12,8" Margin="0,3">
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                                        <!-- 文件序号徽章 [1], [2]... -->
+                                        <Border Grid.Column="0" Background="{DynamicResource SemiColorFill1}" CornerRadius="4"
+                                                Width="26" Height="22" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Index, StringFormat='[{0}]'}" FontSize="11.5" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource SemiColorText1}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- PDF 图标 -->
+                                        <ic:SymbolIcon Grid.Column="1" Symbol="DocumentPdf" FontSize="24"
+                                                       Foreground="{DynamicResource SemiColorPrimary}"
+                                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                                        <!-- 文件名与页数元数据 -->
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="13.5"
+                                                       ToolTip.Tip="{Binding FilePath}" TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding PageCount, StringFormat='共 {0} 页'}"
+                                                           FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                                <Border Background="#20FAAD14" CornerRadius="4" Padding="5,1" IsVisible="{Binding IsEncrypted}">
+                                                    <TextBlock Text="{DynamicResource Input_Encrypted}" FontSize="11" Foreground="#D48806" />
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- 单文件抽取页码范围 -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0" Spacing="8">
+                                            <TextBlock Text="{DynamicResource Merge_PageRange}" VerticalAlignment="Center" FontSize="12.5" Foreground="{DynamicResource SemiColorText1}" />
+                                            <TextBox Text="{Binding PageRange}" Width="110" Classes="clearButton"
+                                                     ToolTip.Tip="{DynamicResource Merge_RangeHint}" VerticalAlignment="Center" />
+                                        </StackPanel>
+
+                                        <!-- 排序与移除操作 -->
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <Button Command="{Binding $parent[UserControl].((tools:MergeViewModel)DataContext).MoveUpCommand}"
+                                                    CommandParameter="{Binding}" Padding="6,5"
+                                                    Theme="{DynamicResource BorderlessButtonTheme}">
+                                                <ic:SymbolIcon Symbol="ArrowUp" FontSize="14" />
+                                            </Button>
+                                            <Button Command="{Binding $parent[UserControl].((tools:MergeViewModel)DataContext).MoveDownCommand}"
+                                                    CommandParameter="{Binding}" Padding="6,5"
+                                                    Theme="{DynamicResource BorderlessButtonTheme}">
+                                                <ic:SymbolIcon Symbol="ArrowDown" FontSize="14" />
+                                            </Button>
+                                            <Button Command="{Binding $parent[UserControl].((tools:MergeViewModel)DataContext).RemoveFileCommand}"
+                                                    CommandParameter="{Binding}" Padding="6,5"
+                                                    Theme="{DynamicResource BorderlessButtonTheme}">
+                                                <ic:SymbolIcon Symbol="Dismiss" FontSize="14" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- 2. 高级自由编排规则卡片（可选） -->
+            <Border Classes="ContentCard" IsVisible="{Binding Files.Count}">
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="BranchFork" FontSize="16" Foreground="{DynamicResource SemiColorPrimary}" VerticalAlignment="Center" />
+                            <TextBlock Text="{DynamicResource Merge_CustomRule_Title}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text="{DynamicResource Merge_CustomRule_Optional}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding ClearRuleCommand}"
+                                Content="{DynamicResource Merge_CustomRule_Reset}"
+                                Theme="{DynamicResource BorderlessButtonTheme}"
+                                IsVisible="{Binding MergeRuleExpression, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </Grid>
+
+                    <TextBox Text="{Binding MergeRuleExpression}"
+                             PlaceholderText="{DynamicResource Merge_CustomRule_Placeholder}"
+                             Classes="clearButton" />
+
+                    <!-- 实时解析预览与语法提示 -->
+                    <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="6" Padding="10,7"
+                            IsVisible="{Binding MergeRulePreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="14" Foreground="{DynamicResource SemiColorPrimary}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding MergeRulePreview}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" FontWeight="Medium" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#20F53F3F" CornerRadius="6" Padding="10,7"
+                            IsVisible="{Binding HasMergeRuleError}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ic:SymbolIcon Symbol="DismissCircle" FontSize="14" Foreground="#F53F3F" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding MergeRuleError}" FontSize="12" Foreground="#F53F3F" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource Merge_CustomRule_Tip}"
+                               FontSize="11.5" Foreground="{DynamicResource SemiColorText2}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- 2. 输出保存位置 -->
+            <Border Classes="ContentCard">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{DynamicResource Output_Label}" FontSize="14" FontWeight="SemiBold" />
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                        <!-- 第一行：保存目录 -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Output_DirectoryLabel}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource SemiColorText1}" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OutputDirectory}"
+                                 PlaceholderText="{DynamicResource Output_DefaultDirHint}"
+                                 Classes="clearButton" VerticalAlignment="Center" />
+                        <Button Grid.Row="0" Grid.Column="2" Command="{Binding BrowseDirectoryCommand}"
+                                Content="{DynamicResource Output_BrowseFolder}" Margin="8,0,0,0" />
+
+                        <!-- 第二行：输出名称 -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Output_FileNameLabel}" FontSize="12.5" VerticalAlignment="Center" Margin="0,10,10,0" Foreground="{DynamicResource SemiColorText1}" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding OutputFileName}"
+                                 Margin="0,10,0,0"
+                                 Classes="clearButton" VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 3. 执行按钮、进度条与结果反馈区 -->
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Command="{Binding ExecuteCommand}"
+                            Content="{DynamicResource Merge_Start}"
+                            Theme="{DynamicResource SolidButtonTheme}"
+                            Classes="Primary"
+                            IsEnabled="{Binding !IsBusy}"
+                            Padding="28,8" FontSize="14" FontWeight="Medium" />
+                    <Button Grid.Column="2" Command="{Binding CancelCommand}"
+                            Content="{DynamicResource Btn_Cancel}"
+                            IsVisible="{Binding IsBusy}"
+                            Theme="{DynamicResource BorderlessButtonTheme}" />
+                </Grid>
+
+                <ProgressBar Value="{Binding ProgressPercentage}" Maximum="100"
+                             IsVisible="{Binding IsBusy}" Height="4" />
+
+                <!-- 成功反馈面板 -->
+                <Border Classes="ContentCard" Background="{DynamicResource BadgeSuccessBackground}"
+                        BorderBrush="{DynamicResource BadgeSuccessForeground}"
+                        IsVisible="{Binding HasSuccessResult}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="24" Foreground="{DynamicResource BadgeSuccessForeground}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" Foreground="{DynamicResource BadgeSuccessForeground}" FontSize="13.5" />
+                            <TextBlock Text="{Binding LastOutputFilePath}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Command="{Binding OpenFileCommand}" Content="{DynamicResource Btn_OpenFile}" />
+                            <Button Command="{Binding OpenFolderCommand}" Content="{DynamicResource Btn_OpenFolder}" />
+                            <Button Command="{Binding CopyCommandCommand}" Content="{DynamicResource Btn_CopyCommand}"
+                                    Theme="{DynamicResource BorderlessButtonTheme}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 错误信息面板 -->
+                <Border Classes="ContentCard" Background="#FFF1F0" BorderBrush="#FFA39E"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{DynamicResource Status_Failed}" FontWeight="SemiBold" Foreground="#CF1322" FontSize="13" />
+                        <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="#A8071A" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

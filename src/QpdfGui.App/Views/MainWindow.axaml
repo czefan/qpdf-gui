@@ -1,0 +1,107 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:QpdfGui.App.ViewModels"
+        xmlns:tools="using:QpdfGui.App.ViewModels.Tools"
+        xmlns:views="using:QpdfGui.App.Views"
+        xmlns:ic="using:FluentIcons.Avalonia"
+        x:Class="QpdfGui.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="QPDF GUI"
+        Width="1060" Height="700"
+        MinWidth="860" MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True"
+        ExtendClientAreaToDecorationsHint="False"
+        Background="{DynamicResource WindowBackgroundBrush}">
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="{x:Type tools:MergeViewModel}">
+            <views:MergeView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type tools:SplitViewModel}">
+            <views:SplitView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type tools:EncryptViewModel}">
+            <views:EncryptView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type tools:DecryptViewModel}">
+            <views:DecryptView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type tools:RotateViewModel}">
+            <views:RotateView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type tools:RepairViewModel}">
+            <views:RepairView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <!-- 全局整体缩放容器（左栏与右栏协同缩放，水平垂直完全充满窗口） -->
+    <LayoutTransformControl HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
+        </LayoutTransformControl.LayoutTransform>
+
+        <Grid ColumnDefinitions="64,*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <!-- 左侧导航侧边栏（宽度 64px，宽 52 x 高 50 高亮居中，左右留白各 6px） -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource SidebarBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardBorderBrush}"
+                    BorderThickness="0,0,1,0"
+                    VerticalAlignment="Stretch">
+                <Grid RowDefinitions="*,Auto">
+                    <!-- 功能列表导航（超出时支持滚轮上下滑动，完全不显示滚动条） -->
+                    <ListBox Grid.Row="0"
+                             ItemsSource="{Binding NavigationItems}"
+                             SelectedItem="{Binding SelectedNavigationItem}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             Margin="0,6,0,0"
+                             HorizontalAlignment="Center"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.Styles>
+                            <Style Selector="ScrollBar">
+                                <Setter Property="IsVisible" Value="False" />
+                                <Setter Property="Width" Value="0" />
+                                <Setter Property="MinWidth" Value="0" />
+                                <Setter Property="MaxWidth" Value="0" />
+                                <Setter Property="Opacity" Value="0" />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NavigationItem">
+                                <StackPanel Orientation="Vertical" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="{Binding Symbol}" FontSize="20" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding Title}" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- 底部设置入口（上下留白小且严格一致为 6px） -->
+                    <Border Grid.Row="1" Margin="0,6,0,6" HorizontalAlignment="Center">
+                        <Button Command="{Binding SelectSettingsCommand}"
+                                Classes="CompactNavButton"
+                                Classes.selected="{Binding IsSettingsSelected}"
+                                Focusable="False">
+                            <StackPanel Orientation="Vertical" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Settings" FontSize="20" HorizontalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Nav_Settings}" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 右侧主工作区（完全撑满剩余空间） -->
+            <ContentControl Grid.Column="1"
+                            Content="{Binding CurrentPage}"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+        </Grid>
+    </LayoutTransformControl>
+</Window>

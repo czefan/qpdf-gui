@@ -1,0 +1,137 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:QpdfGui.App.ViewModels.Tools"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="QpdfGui.App.Views.DecryptView"
+             x:DataType="tools:DecryptViewModel">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,24,28,32" Spacing="16" MaxWidth="760" HorizontalAlignment="Stretch">
+            <!-- 标题 -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource Decrypt_Title}" FontSize="20" FontWeight="SemiBold" />
+                <TextBlock Text="{DynamicResource Decrypt_Desc}" FontSize="13" Foreground="{DynamicResource SemiColorText2}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- 1. 输入文件区卡片（外层常规卡片 + 内部单层虚线热区） -->
+            <Border Classes="ContentCard">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Input_SelectFile}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Command="{Binding ClearFileCommand}" ToolTip.Tip="清除文件"
+                                Theme="{DynamicResource BorderlessButtonTheme}" IsVisible="{Binding HasInputFile}">
+                            <ic:SymbolIcon Symbol="Dismiss" FontSize="14" />
+                        </Button>
+                    </Grid>
+
+                    <!-- 未选文件时的内部单层虚线热区 -->
+                    <Border Classes="DropZone" IsVisible="{Binding !HasInputFile}">
+                        <Button Command="{Binding SelectInputCommand}" Classes="GhostDropZone">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ic:SymbolIcon Symbol="ArrowUpload" FontSize="30" Foreground="{DynamicResource SemiColorPrimary}" />
+                                <TextBlock Text="{DynamicResource Input_DropHint}" FontSize="13.5" FontWeight="Medium" />
+                            </StackPanel>
+                        </Button>
+                    </Border>
+
+                    <!-- 已选文件摘要展示 -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding HasInputFile}">
+                        <ic:SymbolIcon Symbol="DocumentPdf" FontSize="28" Foreground="{DynamicResource SemiColorPrimary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                            <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding FileSizeDisplay}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                <TextBlock Text="•" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                <TextBlock Text="{Binding PageCount, StringFormat='共 {0} 页'}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                <Border Background="#20FAAD14" CornerRadius="4" Padding="6,1" IsVisible="{Binding IsEncrypted}">
+                                    <TextBlock Text="{DynamicResource Input_Encrypted}" FontSize="11" Foreground="#D48806" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="2" Command="{Binding SelectInputCommand}" Content="{DynamicResource Input_ChangeFile}"
+                                Theme="{DynamicResource BorderlessButtonTheme}" VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 2. 密码配置（若需要打开密码） -->
+            <Border Classes="ContentCard">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{DynamicResource Section_DecryptOptions}" FontSize="14" FontWeight="SemiBold" />
+                    <TextBlock Text="{DynamicResource Decrypt_Password}" FontSize="12.5" Foreground="{DynamicResource SemiColorText1}" />
+                    <TextBox Text="{Binding InputPassword}" PasswordChar="•"
+                             PlaceholderText="{DynamicResource Decrypt_PasswordHint}"
+                             Classes="clearButton" />
+                </StackPanel>
+            </Border>
+
+            <!-- 3. 输出保存位置 -->
+            <Border Classes="ContentCard">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{DynamicResource Output_Label}" FontSize="14" FontWeight="SemiBold" />
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                        <!-- 第一行：保存目录 -->
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Output_DirectoryLabel}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource SemiColorText1}" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OutputDirectory}"
+                                 PlaceholderText="{DynamicResource Output_DefaultDirHint}"
+                                 Classes="clearButton" VerticalAlignment="Center" />
+                        <Button Grid.Row="0" Grid.Column="2" Command="{Binding BrowseDirectoryCommand}"
+                                Content="{DynamicResource Output_BrowseFolder}" Margin="8,0,0,0" />
+
+                        <!-- 第二行：输出名称 -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Output_FileNameLabel}" FontSize="12.5" VerticalAlignment="Center" Margin="0,10,10,0" Foreground="{DynamicResource SemiColorText1}" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding OutputFileName}"
+                                 Margin="0,10,0,0"
+                                 Classes="clearButton" VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 4. 执行操作与状态区 -->
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Command="{Binding ExecuteCommand}"
+                            Content="{DynamicResource Decrypt_Start}"
+                            Theme="{DynamicResource SolidButtonTheme}"
+                            Classes="Primary"
+                            IsEnabled="{Binding !IsBusy}"
+                            Padding="28,8" FontSize="14" FontWeight="Medium" />
+                    <Button Grid.Column="2" Command="{Binding CancelCommand}"
+                            Content="{DynamicResource Btn_Cancel}"
+                            IsVisible="{Binding IsBusy}"
+                            Theme="{DynamicResource BorderlessButtonTheme}" />
+                </Grid>
+
+                <ProgressBar Value="{Binding ProgressPercentage}" Maximum="100"
+                             IsVisible="{Binding IsBusy}" Height="4" />
+
+                <!-- 成功反馈 -->
+                <Border Classes="ContentCard" Background="{DynamicResource BadgeSuccessBackground}"
+                        BorderBrush="{DynamicResource BadgeSuccessForeground}"
+                        IsVisible="{Binding HasSuccessResult}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="24" Foreground="{DynamicResource BadgeSuccessForeground}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" Foreground="{DynamicResource BadgeSuccessForeground}" FontSize="13.5" />
+                            <TextBlock Text="{Binding LastOutputFilePath}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button Command="{Binding OpenFileCommand}" Content="{DynamicResource Btn_OpenFile}" />
+                            <Button Command="{Binding OpenFolderCommand}" Content="{DynamicResource Btn_OpenFolder}" />
+                            <Button Command="{Binding CopyCommandCommand}" Content="{DynamicResource Btn_CopyCommand}"
+                                    Theme="{DynamicResource BorderlessButtonTheme}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- 错误反馈 -->
+                <Border Classes="ContentCard" Background="#FFF1F0" BorderBrush="#FFA39E"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{DynamicResource Status_Failed}" FontWeight="SemiBold" Foreground="#CF1322" FontSize="13" />
+                        <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="#A8071A" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
