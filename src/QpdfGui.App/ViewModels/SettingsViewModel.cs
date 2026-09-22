@@ -219,6 +219,12 @@ public partial class SettingsViewModel : ViewModelBase
     public string AppVersion => _updateService.CurrentAppVersion;
 
     /// <summary>
+    /// 是否正在聚合检查更新
+    /// </summary>
+    [ObservableProperty]
+    private bool _isCheckingAnyUpdate;
+
+    /// <summary>
     /// 是否正在检查软件自身更新
     /// </summary>
     [ObservableProperty]
@@ -237,10 +243,40 @@ public partial class SettingsViewModel : ViewModelBase
     private string? _appReleaseUrl;
 
     /// <summary>
+    /// 软件新版本下载直链
+    /// </summary>
+    [ObservableProperty]
+    private string? _appDownloadUrl;
+
+    /// <summary>
+    /// 软件新版本压缩包名称
+    /// </summary>
+    [ObservableProperty]
+    private string? _appDownloadFileName;
+
+    /// <summary>
     /// 是否发现软件新版本
     /// </summary>
     [ObservableProperty]
     private bool _hasAppUpdate;
+
+    /// <summary>
+    /// 是否正在下载软件新版
+    /// </summary>
+    [ObservableProperty]
+    private bool _isDownloadingApp;
+
+    /// <summary>
+    /// 软件下载进度（0.0 ~ 1.0）
+    /// </summary>
+    [ObservableProperty]
+    private double _appDownloadProgress;
+
+    /// <summary>
+    /// 软件下载状态文本
+    /// </summary>
+    [ObservableProperty]
+    private string? _appDownloadStatusText;
 
     /// <summary>
     /// 是否正在检查 QPDF 引擎更新
@@ -366,6 +402,104 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// 统一并发检查客户端和 QPDF 引擎更新
+    /// </summary>
+    [RelayCommand]
+    public async Task CheckAllUpdatesAsync()
+    {
+        if (IsCheckingAnyUpdate) return;
+        IsCheckingAnyUpdate = true;
+        IsCheckingAppUpdate = true;
+        IsCheckingQpdfUpdate = true;
+        AppUpdateStatusMessage = "正在检查软件最新版本...";
+        QpdfUpdateStatusMessage = "正在检查 QPDF 官方发布...";
+
+        try
+        {
+            var result = await _updateService.CheckAllUpdatesAsync(QpdfVersion);
+
+            HasAppUpdate = result.App.HasUpdate;
+            AppReleaseUrl = result.App.ReleaseUrl;
+            AppDownloadUrl = result.App.DownloadUrl;
+            AppDownloadFileName = result.App.AssetName;
+            AppUpdateStatusMessage = result.App.Message;
+
+            HasQpdfUpdate = result.Engine.HasUpdate;
+            QpdfReleaseUrl = result.Engine.ReleaseUrl;
+            QpdfUpdateStatusMessage = result.Engine.Message;
+        }
+        catch (Exception ex)
+        {
+            AppUpdateStatusMessage = $"检查失败: {ex.Message}";
+            QpdfUpdateStatusMessage = $"检查失败: {ex.Message}";
+        }
+        finally
+        {
+            IsCheckingAnyUpdate = false;
+            IsCheckingAppUpdate = false;
+            IsCheckingQpdfUpdate = false;
+        }
+    }
+
+    /// <summary>
+    /// 一键在临时沙箱中静默下载、解压并自动重启应用更新，零残留
+    /// </summary>
+    [RelayCommand]
+    public async Task DownloadAndApplyAppUpdateAsync()
+    {
+        if (IsDownloadingApp) return;
+
+        if (string.IsNullOrWhiteSpace(AppDownloadUrl))
+        {
+            OpenAppReleasePage();
+            return;
+        }
+
+        IsDownloadingApp = true;
+        AppDownloadProgress = 0.0;
+        AppDownloadStatusText = "正在下载新版本...";
+        string? extractedDir = null;
+
+        try
+        {
+            var progress = new Progress<double>(p =>
+            {
+                AppDownloadProgress = p;
+                AppDownloadStatusText = $"正在下载新版本: {p:P0}";
+            });
+
+            extractedDir = await _updateService.DownloadAndExtractAppUpdateAsync(AppDownloadUrl, progress);
+            AppDownloadStatusText = "新版本准备就绪";
+
+            var confirm = await _dialogService.ConfirmAsync(
+                "更新已就绪",
+                "已成功下载并解压最新版本。\n点击【立即重启更新】将退出当前程序并完成替换重启。\n（下载文件已作为临时数据处理，更新后系统零残留）");
+
+            if (confirm)
+            {
+                _updateService.ApplyUpdateAndRestart(extractedDir);
+            }
+            else
+            {
+                _updateService.CleanupUpdateSandbox(extractedDir);
+                AppDownloadStatusText = "更新已取消，临时文件已安全清理";
+            }
+        }
+        catch (Exception ex)
+        {
+            AppDownloadStatusText = $"更新失败: {ex.Message}";
+            if (extractedDir != null)
+            {
+                _updateService.CleanupUpdateSandbox(extractedDir);
+            }
+        }
+        finally
+        {
+            IsDownloadingApp = false;
+        }
+    }
+
+    /// <summary>
     /// 异步检查 QPDF GUI 自身更新
     /// </summary>
     [RelayCommand]
@@ -376,10 +510,12 @@ public partial class SettingsViewModel : ViewModelBase
         AppUpdateStatusMessage = "正在检查最新版本...";
         try
         {
-            var (hasUpdate, _, url, msg) = await _updateService.CheckAppUpdateAsync();
-            HasAppUpdate = hasUpdate;
-            AppReleaseUrl = url;
-            AppUpdateStatusMessage = msg;
+            var result = await _updateService.CheckAppUpdateAsync();
+            HasAppUpdate = result.HasUpdate;
+            AppReleaseUrl = result.ReleaseUrl;
+            AppDownloadUrl = result.DownloadUrl;
+            AppDownloadFileName = result.AssetName;
+            AppUpdateStatusMessage = result.Message;
         }
         catch (Exception ex)
         {
@@ -402,10 +538,10 @@ public partial class SettingsViewModel : ViewModelBase
         QpdfUpdateStatusMessage = "正在检查 QPDF 官方发布...";
         try
         {
-            var (hasUpdate, _, url, msg) = await _updateService.CheckQpdfEngineUpdateAsync(QpdfVersion);
-            HasQpdfUpdate = hasUpdate;
-            QpdfReleaseUrl = url;
-            QpdfUpdateStatusMessage = msg;
+            var result = await _updateService.CheckQpdfEngineUpdateAsync(QpdfVersion);
+            HasQpdfUpdate = result.HasUpdate;
+            QpdfReleaseUrl = result.ReleaseUrl;
+            QpdfUpdateStatusMessage = result.Message;
         }
         catch (Exception ex)
         {

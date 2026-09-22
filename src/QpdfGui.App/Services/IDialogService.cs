@@ -43,4 +43,13 @@ public interface IDialogService
     /// </summary>
     /// <param name="text">要复制的文本内容</param>
     Task SetClipboardTextAsync(string text);
+
+    /// <summary>
+    /// 弹出二选一确认对话框
+    /// </summary>
+    /// <param name="title">对话框标题</param>
+    /// <param name="message">提示消息</param>
+    /// <returns>用户是否点击确认</returns>
+    Task<bool> ConfirmAsync(string title, string message);
 }
+

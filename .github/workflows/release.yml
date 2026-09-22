@@ -68,11 +68,11 @@ jobs:
           Get-ChildItem -Path "dist" -Recurse -Filter "*.pdb" | Remove-Item -Force -ErrorAction SilentlyContinue
 
           # 独立免装版 (Self-Contained)
-          $standaloneZip = "QpdfGui-${version}-win-x64-self-contained.zip"
+          $standaloneZip = "QpdfGui-win-x64-self-contained.zip"
           Compress-Archive -Path "dist\standalone-win-x64\*" -DestinationPath "dist\$standaloneZip" -Force
 
           # 框架依赖轻量版 (Framework-Dependent)
-          $frameworkZip = "QpdfGui-${version}-win-x64-framework-dependent.zip"
+          $frameworkZip = "QpdfGui-win-x64-framework-dependent.zip"
           Compress-Archive -Path "dist\framework-dependent-win-x64\*" -DestinationPath "dist\$frameworkZip" -Force
 
           Write-Host "Created $standaloneZip and $frameworkZip"
@@ -82,8 +82,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           files: |
-            dist/QpdfGui-*-win-x64-self-contained.zip
-            dist/QpdfGui-*-win-x64-framework-dependent.zip
+            dist/QpdfGui-win-x64-self-contained.zip
+            dist/QpdfGui-win-x64-framework-dependent.zip
           generate_release_notes: true
           draft: false
           prerelease: false

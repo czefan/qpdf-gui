@@ -1,0 +1,10 @@
+# 统一跨平台换行符，防止不同操作系统环境（如 CI）篡改文件
+* text=auto eol=lf
+
+# 强制二进制与固件格式不进行换行符转换
+*.pdf binary
+*.dll binary
+*.exe binary
+*.zip binary
+*.png binary
+*.ico binary

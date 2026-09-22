@@ -67,7 +67,7 @@ public class PdfInspector
                 isEncrypted = true;
                 requiresPassword = true;
             }
-            else if (encExec.ExitCode == 0)
+            else if (encExec.ExitCode == 0 || encExec.ExitCode == 3)
             {
                 try
                 {
@@ -136,7 +136,7 @@ public class PdfInspector
                     .WithValidation(CommandResultValidation.None)
                     .ExecuteBufferedAsync(ct);
 
-                if (pageExec.ExitCode == 0 && int.TryParse(pageExec.StandardOutput.Trim(), out var parsedCount))
+                if ((pageExec.ExitCode == 0 || pageExec.ExitCode == 3) && int.TryParse(pageExec.StandardOutput.Trim(), out var parsedCount))
                 {
                     pageCount = parsedCount;
                 }

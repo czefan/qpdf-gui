@@ -329,12 +329,29 @@ public class QpdfServiceIntegrationTests
         Assert.True(userInfoNoPwd.RequiresPassword);
 
         var userInfoWithPwd = await _inspector.InspectAsync(userEncryptedPdf, "user123");
+        Assert.True(string.IsNullOrEmpty(userInfoWithPwd.ErrorMessage), $"探查失败: {userInfoWithPwd.ErrorMessage}");
         Assert.Equal(3, userInfoWithPwd.PageCount);
 
         // 2. owner-only 加密无需用户密码即可打开探查
         var ownerInfo = await _inspector.InspectAsync(ownerOnlyPdf);
         Assert.True(ownerInfo.IsEncrypted);
         Assert.False(ownerInfo.RequiresPassword);
+        Assert.True(string.IsNullOrEmpty(ownerInfo.ErrorMessage), $"探查失败: {ownerInfo.ErrorMessage}");
         Assert.Equal(3, ownerInfo.PageCount);
     }
+
+    [SkippableFact]
+    public async Task Inspect_DamagedPdf_WithWarnings_SuccessfullyInspectsPageCount()
+    {
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
+        var rootDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var damagedPdf = Path.Combine(rootDir, "tests", "fixtures", "damaged.pdf");
+        Assert.True(File.Exists(damagedPdf), $"固件未找到: {damagedPdf}");
+
+        var info = await _inspector.InspectAsync(damagedPdf);
+        Assert.True(info.IsValid, info.ErrorMessage);
+        Assert.Equal(3, info.PageCount);
+        Assert.False(info.IsEncrypted);
+    }
 }
+

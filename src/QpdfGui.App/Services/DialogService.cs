@@ -137,4 +137,76 @@ public class DialogService : IDialogService
             }
         }
     }
+
+    public async Task<bool> ConfirmAsync(string title, string message)
+    {
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop ||
+            desktop.MainWindow == null)
+        {
+            return false;
+        }
+
+        var tcs = new TaskCompletionSource<bool>();
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 400,
+            Height = 190,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            ShowInTaskbar = false
+        };
+
+        var okButton = new Button
+        {
+            Content = "立即重启更新",
+            Theme = dialog.FindResource("SolidButtonTheme") as Avalonia.Styling.ControlTheme,
+            Classes = { "Primary" }
+        };
+        okButton.Click += (_, _) =>
+        {
+            tcs.TrySetResult(true);
+            dialog.Close();
+        };
+
+        var cancelButton = new Button
+        {
+            Content = "稍后",
+            Theme = dialog.FindResource("BorderlessButtonTheme") as Avalonia.Styling.ControlTheme,
+            Margin = new Thickness(8, 0, 0, 0)
+        };
+        cancelButton.Click += (_, _) =>
+        {
+            tcs.TrySetResult(false);
+            dialog.Close();
+        };
+
+        var content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Spacing = 16,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = message,
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                    FontSize = 13
+                },
+                new StackPanel
+                {
+                    Orientation = Avalonia.Layout.Orientation.Horizontal,
+                    HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                    Children = { okButton, cancelButton }
+                }
+            }
+        };
+
+        dialog.Content = content;
+        dialog.Closed += (_, _) => tcs.TrySetResult(false);
+
+        await dialog.ShowDialog(desktop.MainWindow);
+        return await tcs.Task;
+    }
 }
+

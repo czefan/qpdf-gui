@@ -115,6 +115,11 @@
     <sys:String x:Key="Settings_Nav_Engine">QPDF Engine</sys:String>
     <sys:String x:Key="Settings_Nav_About">About &amp; Updates</sys:String>
     <sys:String x:Key="Settings_CheckUpdate">Check for Updates</sys:String>
+    <sys:String x:Key="Settings_CheckAllUpdates">Check All Updates</sys:String>
+    <sys:String x:Key="Settings_UpdateCenterTitle">Version &amp; Update Center</sys:String>
+    <sys:String x:Key="Settings_ClientApp">QPDF GUI Client</sys:String>
+    <sys:String x:Key="Settings_EngineComponent">QPDF Engine</sys:String>
+    <sys:String x:Key="Settings_UpdateNow">Update Now</sys:String>
     <sys:String x:Key="Settings_CheckQpdfUpdate">Check Engine Updates</sys:String>
     <sys:String x:Key="Settings_GoToRelease">Open Release Page</sys:String>
     <sys:String x:Key="Settings_OpenHomepage">Visit Project Home</sys:String>

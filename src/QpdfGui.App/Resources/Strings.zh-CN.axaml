@@ -115,6 +115,11 @@
     <sys:String x:Key="Settings_Nav_Engine">QPDF 引擎</sys:String>
     <sys:String x:Key="Settings_Nav_About">关于与更新</sys:String>
     <sys:String x:Key="Settings_CheckUpdate">检查更新</sys:String>
+    <sys:String x:Key="Settings_CheckAllUpdates">检查全部更新</sys:String>
+    <sys:String x:Key="Settings_UpdateCenterTitle">版本与更新中心</sys:String>
+    <sys:String x:Key="Settings_ClientApp">QPDF GUI 桌面端</sys:String>
+    <sys:String x:Key="Settings_EngineComponent">QPDF 核心引擎</sys:String>
+    <sys:String x:Key="Settings_UpdateNow">立即更新</sys:String>
     <sys:String x:Key="Settings_CheckQpdfUpdate">检查引擎更新</sys:String>
     <sys:String x:Key="Settings_GoToRelease">前往发布页</sys:String>
     <sys:String x:Key="Settings_OpenHomepage">访问项目主页</sys:String>
