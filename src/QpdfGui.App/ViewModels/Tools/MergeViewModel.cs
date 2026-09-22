@@ -199,6 +199,17 @@ public partial class MergeViewModel : ViewModelBase
     private string? _mergeRuleExpression;
 
     /// <summary>
+    /// 执行过程中 QPDF 产生的警告或提示项
+    /// </summary>
+    public ObservableCollection<string> Warnings { get; } = [];
+
+    /// <summary>
+    /// 是否存在警告
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasWarnings;
+
+    /// <summary>
     /// 合并规则解析成功后的友好预览提示
     /// </summary>
     [ObservableProperty]
@@ -395,6 +406,8 @@ public partial class MergeViewModel : ViewModelBase
         HasSuccessResult = false;
         ErrorMessage = null;
         StatusMessage = null;
+        Warnings.Clear();
+        HasWarnings = false;
         EquivalentCommand = null;
     }
 
@@ -535,6 +548,8 @@ public partial class MergeViewModel : ViewModelBase
         IsBusy = true;
         HasSuccessResult = false;
         ErrorMessage = null;
+        Warnings.Clear();
+        HasWarnings = false;
         ProgressPercentage = 0;
         StatusMessage = LocalizationManager.GetString("Status_Processing");
 
@@ -584,7 +599,19 @@ public partial class MergeViewModel : ViewModelBase
                 ProgressPercentage = 100;
                 HasSuccessResult = true;
                 LastOutputFilePath = result.OutputFile ?? OutputPath;
-                StatusMessage = $"{LocalizationManager.GetString("Status_Success")} ({result.Duration.TotalSeconds:F2}s)";
+                if (result.Warnings.Count > 0)
+                {
+                    foreach (var w in result.Warnings)
+                    {
+                        Warnings.Add(w);
+                    }
+                    HasWarnings = true;
+                    StatusMessage = $"{LocalizationManager.GetString("Status_Success")} ({result.Warnings.Count} 条提示/警告, {result.Duration.TotalSeconds:F2}s)";
+                }
+                else
+                {
+                    StatusMessage = $"{LocalizationManager.GetString("Status_Success")} ({result.Duration.TotalSeconds:F2}s)";
+                }
             }
             else
             {

@@ -34,7 +34,7 @@ public class QpdfService : IQpdfService
     {
         var job = new QpdfJob
         {
-            InputFile = "--empty",
+            Empty = "",
             OutputFile = outputPath,
             Pages = pages.ToList()
         };
@@ -56,7 +56,8 @@ public class QpdfService : IQpdfService
 
         var job = new QpdfJob
         {
-            InputFile = hasSubRange ? "--empty" : inputPath,
+            InputFile = hasSubRange ? null : inputPath,
+            Empty = hasSubRange ? "" : null,
             OutputFile = outputPattern,
             SplitPages = splitPages.ToString(),
             Password = hasSubRange ? null : password,
@@ -127,7 +128,7 @@ public class QpdfService : IQpdfService
     {
         var job = new QpdfJob
         {
-            InputFile = "--empty",
+            Empty = "",
             OutputFile = outputPath,
             Pages =
             [

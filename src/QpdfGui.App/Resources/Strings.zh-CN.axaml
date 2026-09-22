@@ -72,6 +72,7 @@
     <sys:String x:Key="Encrypt_AllowModify">允许修改文档内容</sys:String>
     <sys:String x:Key="Encrypt_AllowCopy">允许复制文字与图像</sys:String>
     <sys:String x:Key="Encrypt_AllowAnnot">允许添加批注与表单填写</sys:String>
+    <sys:String x:Key="Encrypt_NeedPassword">请至少设置一个打开密码或管理密码</sys:String>
     <sys:String x:Key="Encrypt_Start">开始加密</sys:String>
 
     <!-- 解密 -->

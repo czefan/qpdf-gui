@@ -173,12 +173,23 @@
             <!-- 3. 执行按钮、进度条与结果反馈区 -->
             <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Button Command="{Binding ExecuteCommand}"
-                            Content="{DynamicResource Merge_Start}"
-                            Theme="{DynamicResource SolidButtonTheme}"
-                            Classes="Primary"
-                            IsEnabled="{Binding !IsBusy}"
-                            Padding="28,8" FontSize="14" FontWeight="Medium" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Command="{Binding ExecuteCommand}"
+                                Content="{DynamicResource Merge_Start}"
+                                Theme="{DynamicResource SolidButtonTheme}"
+                                Classes="Primary"
+                                IsEnabled="{Binding !IsBusy}"
+                                Padding="28,8" FontSize="14" FontWeight="Medium" />
+                        <Button Command="{Binding CopyCommandCommand}"
+                                ToolTip.Tip="{Binding EquivalentCommand}"
+                                IsEnabled="{Binding EquivalentCommand, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                Theme="{DynamicResource BorderlessButtonTheme}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Copy" FontSize="16" />
+                                <TextBlock Text="{DynamicResource Btn_CopyCommand}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                     <Button Grid.Column="2" Command="{Binding CancelCommand}"
                             Content="{DynamicResource Btn_Cancel}"
                             IsVisible="{Binding IsBusy}"
@@ -207,12 +218,34 @@
                     </Grid>
                 </Border>
 
+                <!-- 警告明细面板 -->
+                <Border Classes="ContentCard" Background="{DynamicResource FeedbackWarningBackground}"
+                        BorderBrush="{DynamicResource FeedbackWarningBorder}"
+                        IsVisible="{Binding HasWarnings}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="QPDF 提示与警告记录：" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FeedbackWarningForeground}" FontSize="13" />
+                        <ItemsControl ItemsSource="{Binding Warnings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="11.5"
+                                               Foreground="{DynamicResource SemiColorText1}"
+                                               TextWrapping="Wrap" Margin="0,2" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
                 <!-- 错误信息面板 -->
-                <Border Classes="ContentCard" Background="#FFF1F0" BorderBrush="#FFA39E"
+                <Border Classes="ContentCard" Background="{DynamicResource FeedbackErrorBackground}"
+                        BorderBrush="{DynamicResource FeedbackErrorBorder}"
                         IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="{DynamicResource Status_Failed}" FontWeight="SemiBold" Foreground="#CF1322" FontSize="13" />
-                        <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="#A8071A" TextWrapping="Wrap" />
+                        <TextBlock Text="{DynamicResource Status_Failed}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource FeedbackErrorForeground}" FontSize="13" />
+                        <TextBlock Text="{Binding ErrorMessage}" FontSize="12"
+                                   Foreground="{DynamicResource FeedbackErrorText}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </StackPanel>

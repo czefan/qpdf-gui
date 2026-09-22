@@ -71,8 +71,14 @@ public partial class EncryptViewModel : SingleFileToolViewModel
             return;
         }
 
-        var uPwd = !string.IsNullOrWhiteSpace(UserPassword) ? UserPassword : "";
-        var oPwd = !string.IsNullOrWhiteSpace(OwnerPassword) ? OwnerPassword : "owner";
+        var uPwd = UserPassword ?? string.Empty;
+        var oPwd = !string.IsNullOrWhiteSpace(OwnerPassword) ? OwnerPassword : uPwd;
+        if (string.IsNullOrWhiteSpace(uPwd) && string.IsNullOrWhiteSpace(oPwd))
+        {
+            EquivalentCommand = null;
+            return;
+        }
+
         var print = AllowPrinting ? "full" : "none";
         var modify = AllowModification ? "all" : "none";
         var extract = AllowExtraction ? "y" : "n";
@@ -88,10 +94,20 @@ public partial class EncryptViewModel : SingleFileToolViewModel
     {
         if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath)) return;
 
+        var uPwd = UserPassword ?? string.Empty;
+        var oPwd = !string.IsNullOrWhiteSpace(OwnerPassword) ? OwnerPassword : uPwd;
+
+        if (string.IsNullOrWhiteSpace(uPwd) && string.IsNullOrWhiteSpace(oPwd))
+        {
+            ErrorMessage = LocalizationManager.GetString("Encrypt_NeedPassword");
+            StatusMessage = LocalizationManager.GetString("Status_Failed");
+            return;
+        }
+
         var options = new EncryptOptions
         {
-            UserPassword = UserPassword,
-            OwnerPassword = OwnerPassword,
+            UserPassword = uPwd,
+            OwnerPassword = oPwd,
             Aes256 = new Encrypt256BitOptions
             {
                 Print = AllowPrinting ? "full" : "none",

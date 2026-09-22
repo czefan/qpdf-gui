@@ -20,6 +20,10 @@ public class QpdfJob
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? InputFile { get; set; }
 
+    [JsonPropertyName("empty")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Empty { get; set; }
+
     [JsonPropertyName("outputFile")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? OutputFile { get; set; }

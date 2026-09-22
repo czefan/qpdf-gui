@@ -12,16 +12,32 @@
                     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F0F2F5" />
                     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#F7F8FA" />
                     <SolidColorBrush x:Key="CardBorderBrush" Color="#E1E4E8" />
+                    <SolidColorBrush x:Key="DropZoneBackgroundBrush" Color="#F0F2F5" />
                     <SolidColorBrush x:Key="BadgeSuccessBackground" Color="#E8FFEA" />
                     <SolidColorBrush x:Key="BadgeSuccessForeground" Color="#00B42A" />
+                    <SolidColorBrush x:Key="FeedbackErrorBackground" Color="#FFF1F0" />
+                    <SolidColorBrush x:Key="FeedbackErrorBorder" Color="#FFA39E" />
+                    <SolidColorBrush x:Key="FeedbackErrorForeground" Color="#CF1322" />
+                    <SolidColorBrush x:Key="FeedbackErrorText" Color="#A8071A" />
+                    <SolidColorBrush x:Key="FeedbackWarningBackground" Color="#FFFBE6" />
+                    <SolidColorBrush x:Key="FeedbackWarningBorder" Color="#FFE58F" />
+                    <SolidColorBrush x:Key="FeedbackWarningForeground" Color="#D48806" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#18181B" />
                     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#202024" />
                     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#232328" />
                     <SolidColorBrush x:Key="CardBorderBrush" Color="#333338" />
+                    <SolidColorBrush x:Key="DropZoneBackgroundBrush" Color="#2A2A30" />
                     <SolidColorBrush x:Key="BadgeSuccessBackground" Color="#163820" />
                     <SolidColorBrush x:Key="BadgeSuccessForeground" Color="#27C346" />
+                    <SolidColorBrush x:Key="FeedbackErrorBackground" Color="#2C1618" />
+                    <SolidColorBrush x:Key="FeedbackErrorBorder" Color="#5C2226" />
+                    <SolidColorBrush x:Key="FeedbackErrorForeground" Color="#F76965" />
+                    <SolidColorBrush x:Key="FeedbackErrorText" Color="#E58583" />
+                    <SolidColorBrush x:Key="FeedbackWarningBackground" Color="#2B2614" />
+                    <SolidColorBrush x:Key="FeedbackWarningBorder" Color="#594B1B" />
+                    <SolidColorBrush x:Key="FeedbackWarningForeground" Color="#F7BA1E" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
@@ -173,7 +189,10 @@
             <Setter Property="Foreground" Value="{Binding $parent[ContentControl].Foreground, FallbackValue={DynamicResource SemiColorText0}}" />
         </Style>
         <Style Selector="Button ic|SymbolIcon">
-            <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground, FallbackValue={DynamicResource SemiColorText0}}" />
+            <Setter Property="Foreground" Value="{Binding $parent[ContentPresenter].Foreground, FallbackValue={DynamicResource SemiColorText0}}" />
+        </Style>
+        <Style Selector="Button:disabled ic|SymbolIcon">
+            <Setter Property="Foreground" Value="{DynamicResource SemiColorDisabledText}" />
         </Style>
     </Application.Styles>
 </Application>

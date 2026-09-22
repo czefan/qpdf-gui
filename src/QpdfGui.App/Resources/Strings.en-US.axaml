@@ -71,8 +71,9 @@
     <sys:String x:Key="Encrypt_AllowPrint">Allow Printing</sys:String>
     <sys:String x:Key="Encrypt_AllowModify">Allow Modifications</sys:String>
     <sys:String x:Key="Encrypt_AllowCopy">Allow Copying Text &amp; Graphics</sys:String>
-    <sys:String x:Key="Encrypt_AllowAnnot">Allow Annotations &amp; Forms</sys:String>
-    <sys:String x:Key="Encrypt_Start">Start Encrypt</sys:String>
+    <sys:String x:Key="Encrypt_AllowAnnot">Allow annotations and forms</sys:String>
+    <sys:String x:Key="Encrypt_NeedPassword">Please specify at least an open password or owner password.</sys:String>
+    <sys:String x:Key="Encrypt_Start">Start Encrypting</sys:String>
 
     <!-- Decrypt -->
     <sys:String x:Key="Decrypt_Title">Decrypt &amp; Remove Restrictions</sys:String>
