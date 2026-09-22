@@ -1,51 +1,67 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Microsoft.Extensions.DependencyInjection;
+using Avalonia.Threading;
 using QpdfGui.App.Services;
 using QpdfGui.App.ViewModels;
 using QpdfGui.App.ViewModels.Tools;
 using QpdfGui.App.Views;
-using QpdfGui.Core.Services;
+using QpdfGui.Core.Inspect;
+using QpdfGui.Core.Process;
 
 namespace QpdfGui.App;
 
 /// <summary>
-/// 应用程序入口与依赖注入容器管理类
-/// 负责全局服务注册、首选项（主题、语言）初始应用、主窗口生命周期管理以及自动化测试截图支持
+/// 应用程序入口与对象生命周期管理类
+/// 移除反射 DI 容器，采用直接单例对象构造，极简且提升启动速度与裁剪安全性
 /// </summary>
 public partial class App : Application
 {
-    /// <summary>
-    /// 全局依赖注入服务提供者实例
-    /// </summary>
-    public static IServiceProvider Services { get; private set; } = null!;
-
-    /// <inheritdoc />
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
     }
 
-    /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        Services = services.BuildServiceProvider();
+        var settings = new SettingsStore();
+        var dialogService = new DialogService();
+        var runner = new QpdfRunner();
+        var inspector = new PdfInspector(settings.Current.CustomQpdfPath);
+        var downloaderService = new QpdfDownloaderService();
+        var updateService = new UpdateService();
 
-        var settings = Services.GetRequiredService<SettingsStore>();
+        var engineStatus = new EngineStatusViewModel(settings, dialogService, downloaderService);
+
+        var mergeVm = new MergeViewModel(dialogService, settings, runner, inspector);
+        var splitVm = new SplitViewModel(dialogService, settings, runner, inspector);
+        var encryptVm = new EncryptViewModel(dialogService, settings, runner, inspector);
+        var decryptVm = new DecryptViewModel(dialogService, settings, runner, inspector);
+        var rotateVm = new RotateViewModel(dialogService, settings, runner, inspector);
+        var repairVm = new RepairViewModel(dialogService, settings, runner, inspector);
+        var settingsVm = new SettingsViewModel(settings, dialogService, engineStatus, updateService, downloaderService);
+
+        var mainVm = new MainWindowViewModel(engineStatus, mergeVm, splitVm, encryptVm, decryptVm, rotateVm, repairVm, settingsVm);
+
         LocalizationManager.ApplyLanguage(settings.Current.Language);
         SettingsViewModel.ApplyTheme(settings.Current.ThemeVariant);
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var mainVm = Services.GetRequiredService<MainWindowViewModel>();
             var mainWindow = new MainWindow
             {
                 DataContext = mainVm
             };
             desktop.MainWindow = mainWindow;
+
+            // P7：延后至窗口 Opened 之后在低优先级队列异步探测 QPDF 引擎版本，不与首帧竞争
+            mainWindow.Opened += (_, _) =>
+            {
+                Dispatcher.UIThread.Post(async () =>
+                {
+                    await engineStatus.RefreshAsync();
+                }, DispatcherPriority.Background);
+            };
 
             // 自动化自测截图与参数驱动支持
             var args = desktop.Args ?? [];
@@ -138,32 +154,5 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-    }
-
-    /// <summary>
-    /// 注册核心业务服务与所有页面的 ViewModel 依赖项
-    /// </summary>
-    private static void ConfigureServices(IServiceCollection services)
-    {
-        services.AddSingleton<SettingsStore>();
-        services.AddSingleton<IDialogService, DialogService>();
-        services.AddSingleton<IUpdateService, UpdateService>();
-        services.AddSingleton<IQpdfDownloaderService, QpdfDownloaderService>();
-
-        services.AddSingleton<IQpdfService>(sp =>
-        {
-            var store = sp.GetRequiredService<SettingsStore>();
-            return new QpdfService(customPathProvider: () => store.Current.CustomQpdfPath);
-        });
-
-        services.AddTransient<MergeViewModel>();
-        services.AddTransient<SplitViewModel>();
-        services.AddTransient<EncryptViewModel>();
-        services.AddTransient<DecryptViewModel>();
-        services.AddTransient<RotateViewModel>();
-        services.AddTransient<RepairViewModel>();
-        services.AddSingleton<SettingsViewModel>();
-
-        services.AddSingleton<MainWindowViewModel>();
     }
 }

@@ -1,113 +1,64 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using QpdfGui.App.Services;
+using QpdfGui.Core.Inspect;
 using QpdfGui.Core.Jobs;
+using QpdfGui.Core.Process;
 using QpdfGui.Core.Services;
 
 namespace QpdfGui.App.ViewModels.Tools;
 
 /// <summary>
 /// PDF 权限与密码加密 ViewModel
-/// 采用高强度 AES-256 标准，支持配置用户打开密码、拥有者管理密码以及打印/编辑/内容复制/批注等精细权限
 /// </summary>
-public partial class EncryptViewModel : SingleFileToolViewModel
+public partial class EncryptViewModel : ToolViewModel
 {
-    /// <summary>
-    /// 文档打开密码（用户密码）；若设置则打开该 PDF 时必须输入此密码
-    /// </summary>
     [ObservableProperty]
     private string? _userPassword;
 
-    /// <summary>
-    /// 权限/拥有者管理密码；若设置则用于保护权限不被擅自更改
-    /// </summary>
     [ObservableProperty]
     private string? _ownerPassword;
 
-    /// <summary>
-    /// 是否允许打印该文档
-    /// </summary>
     [ObservableProperty]
     private bool _allowPrinting = true;
 
-    /// <summary>
-    /// 是否允许修改文档内容
-    /// </summary>
     [ObservableProperty]
     private bool _allowModification = true;
 
-    /// <summary>
-    /// 是否允许复制文本与图像（提取内容）
-    /// </summary>
     [ObservableProperty]
     private bool _allowExtraction = true;
 
-    /// <summary>
-    /// 是否允许添加批注与表单填写
-    /// </summary>
     [ObservableProperty]
     private bool _allowAnnotations = true;
 
+    partial void OnUserPasswordChanged(string? value) => UpdateEquivalentCommand();
+    partial void OnOwnerPasswordChanged(string? value) => UpdateEquivalentCommand();
+    partial void OnAllowPrintingChanged(bool value) => UpdateEquivalentCommand();
+    partial void OnAllowModificationChanged(bool value) => UpdateEquivalentCommand();
+    partial void OnAllowExtractionChanged(bool value) => UpdateEquivalentCommand();
+    partial void OnAllowAnnotationsChanged(bool value) => UpdateEquivalentCommand();
+
     public EncryptViewModel(
-        IQpdfService qpdfService,
         IDialogService dialogService,
-        SettingsStore settingsStore)
-        : base(qpdfService, dialogService, settingsStore)
+        SettingsStore settingsStore,
+        QpdfRunner? runner = null,
+        PdfInspector? inspector = null)
+        : base(dialogService, settingsStore, runner, inspector)
     {
     }
 
-    /// <inheritdoc />
     protected override void UpdateDefaultOutputPath()
     {
-        OutputPath = ResolveOutputPathWithSuffix("encrypted");
+        if (string.IsNullOrWhiteSpace(InputPath)) return;
+        var dir = SettingsStore.Current.DefaultOutputDirectory;
+        OutputPath = OutputPathResolver.ResolveUniquePath(dir, InputPath, "encrypted");
     }
 
-    /// <inheritdoc />
-    public override void UpdateEquivalentCommand()
+    private EncryptOptions? BuildNormalizedOptions()
     {
-        if (string.IsNullOrWhiteSpace(InputPath))
+        var raw = new EncryptOptions
         {
-            EquivalentCommand = null;
-            return;
-        }
-
-        var uPwd = UserPassword ?? string.Empty;
-        var oPwd = !string.IsNullOrWhiteSpace(OwnerPassword) ? OwnerPassword : uPwd;
-        if (string.IsNullOrWhiteSpace(uPwd) && string.IsNullOrWhiteSpace(oPwd))
-        {
-            EquivalentCommand = null;
-            return;
-        }
-
-        var print = AllowPrinting ? "full" : "none";
-        var modify = AllowModification ? "all" : "none";
-        var extract = AllowExtraction ? "y" : "n";
-        var annotate = AllowAnnotations ? "y" : "n";
-
-        var pwdArg = !string.IsNullOrWhiteSpace(InputPassword) ? $"--password=\"{InputPassword}\" " : "";
-        EquivalentCommand = $"qpdf {pwdArg}\"{InputPath}\" --encrypt \"{uPwd}\" \"{oPwd}\" 256 --print={print} --modify={modify} --extract={extract} --annotate={annotate} -- \"{OutputPath}\"";
-    }
-
-    /// <inheritdoc />
-    [RelayCommand]
-    public override async Task ExecuteAsync()
-    {
-        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath)) return;
-
-        var uPwd = UserPassword ?? string.Empty;
-        var oPwd = !string.IsNullOrWhiteSpace(OwnerPassword) ? OwnerPassword : uPwd;
-
-        if (string.IsNullOrWhiteSpace(uPwd) && string.IsNullOrWhiteSpace(oPwd))
-        {
-            ErrorMessage = LocalizationManager.GetString("Encrypt_NeedPassword");
-            StatusMessage = LocalizationManager.GetString("Status_Failed");
-            return;
-        }
-
-        var options = new EncryptOptions
-        {
-            UserPassword = uPwd,
-            OwnerPassword = oPwd,
+            UserPassword = UserPassword,
+            OwnerPassword = OwnerPassword,
             Aes256 = new Encrypt256BitOptions
             {
                 Print = AllowPrinting ? "full" : "none",
@@ -116,8 +67,28 @@ public partial class EncryptViewModel : SingleFileToolViewModel
                 Annotate = AllowAnnotations ? "y" : "n"
             }
         };
+        return raw.Normalize();
+    }
 
-        await RunProcessTaskAsync((progress, ct) =>
-            QpdfService.EncryptAsync(InputPath, OutputPath, options, InputPassword, progress, ct));
+    public override QpdfJob? BuildJob()
+    {
+        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath))
+        {
+            return null;
+        }
+
+        var options = BuildNormalizedOptions();
+        if (options == null)
+        {
+            return null;
+        }
+
+        return new QpdfJob
+        {
+            InputFile = InputPath,
+            OutputFile = OutputPath,
+            Password = InputPassword,
+            Encrypt = options
+        };
     }
 }

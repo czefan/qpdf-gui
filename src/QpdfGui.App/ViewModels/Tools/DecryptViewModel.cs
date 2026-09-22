@@ -1,49 +1,45 @@
-using CommunityToolkit.Mvvm.Input;
 using QpdfGui.App.Services;
+using QpdfGui.Core.Inspect;
+using QpdfGui.Core.Jobs;
+using QpdfGui.Core.Process;
 using QpdfGui.Core.Services;
 
 namespace QpdfGui.App.ViewModels.Tools;
 
 /// <summary>
 /// PDF 文档解密与权限限制移除 ViewModel
-/// 支持解除密码保护以及打印/编辑/复制等权限限制，输出不受限制的普通 PDF
 /// </summary>
-public partial class DecryptViewModel : SingleFileToolViewModel
+public partial class DecryptViewModel : ToolViewModel
 {
     public DecryptViewModel(
-        IQpdfService qpdfService,
         IDialogService dialogService,
-        SettingsStore settingsStore)
-        : base(qpdfService, dialogService, settingsStore)
+        SettingsStore settingsStore,
+        QpdfRunner? runner = null,
+        PdfInspector? inspector = null)
+        : base(dialogService, settingsStore, runner, inspector)
     {
     }
 
-    /// <inheritdoc />
     protected override void UpdateDefaultOutputPath()
     {
-        OutputPath = ResolveOutputPathWithSuffix("decrypted");
+        if (string.IsNullOrWhiteSpace(InputPath)) return;
+        var dir = SettingsStore.Current.DefaultOutputDirectory;
+        OutputPath = OutputPathResolver.ResolveUniquePath(dir, InputPath, "decrypted");
     }
 
-    /// <inheritdoc />
-    public override void UpdateEquivalentCommand()
+    public override QpdfJob? BuildJob()
     {
-        if (string.IsNullOrWhiteSpace(InputPath))
+        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath))
         {
-            EquivalentCommand = null;
-            return;
+            return null;
         }
 
-        var pwdArg = !string.IsNullOrWhiteSpace(InputPassword) ? $"--password=\"{InputPassword}\" " : "";
-        EquivalentCommand = $"qpdf {pwdArg}\"{InputPath}\" --decrypt \"{OutputPath}\"";
-    }
-
-    /// <inheritdoc />
-    [RelayCommand]
-    public override async Task ExecuteAsync()
-    {
-        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath)) return;
-
-        await RunProcessTaskAsync((progress, ct) =>
-            QpdfService.DecryptAsync(InputPath, OutputPath, InputPassword, progress, ct));
+        return new QpdfJob
+        {
+            InputFile = InputPath,
+            OutputFile = OutputPath,
+            Password = InputPassword,
+            Decrypt = ""
+        };
     }
 }

@@ -284,20 +284,58 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string? _engineDownloadStatusText;
 
+    public EngineStatusViewModel EngineStatus { get; }
+
     public SettingsViewModel(
         SettingsStore settingsStore,
         IDialogService dialogService,
+        EngineStatusViewModel? engineStatus = null,
         IUpdateService? updateService = null,
         IQpdfDownloaderService? downloaderService = null)
     {
         _settingsStore = settingsStore;
         _dialogService = dialogService;
-        _updateService = updateService ?? new UpdateService();
         _downloaderService = downloaderService ?? new QpdfDownloaderService();
+        EngineStatus = engineStatus ?? new EngineStatusViewModel(_settingsStore, _dialogService, _downloaderService);
+        _updateService = updateService ?? new UpdateService();
 
         _customQpdfPath = _settingsStore.Current.CustomQpdfPath;
         _defaultOutputDirectory = _settingsStore.Current.DefaultOutputDirectory;
         _useCustomOutputDir = !string.IsNullOrWhiteSpace(_defaultOutputDirectory);
+
+        // 联动 EngineStatus
+        EngineStatus.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(EngineStatusViewModel.IsQpdfValid))
+            {
+                IsQpdfValid = EngineStatus.IsQpdfValid;
+                OnQpdfStatusChanged?.Invoke();
+            }
+            else if (e.PropertyName == nameof(EngineStatusViewModel.QpdfVersion))
+            {
+                QpdfVersion = EngineStatus.QpdfVersion;
+            }
+            else if (e.PropertyName == nameof(EngineStatusViewModel.ResolvedQpdfPath))
+            {
+                ResolvedQpdfPath = EngineStatus.ResolvedQpdfPath;
+            }
+            else if (e.PropertyName == nameof(EngineStatusViewModel.IsDownloading))
+            {
+                IsDownloadingEngine = EngineStatus.IsDownloading;
+            }
+            else if (e.PropertyName == nameof(EngineStatusViewModel.DownloadProgress))
+            {
+                EngineDownloadProgress = EngineStatus.DownloadProgress;
+            }
+            else if (e.PropertyName == nameof(EngineStatusViewModel.DownloadStatusText))
+            {
+                EngineDownloadStatusText = EngineStatus.DownloadStatusText;
+            }
+        };
+
+        IsQpdfValid = EngineStatus.IsQpdfValid;
+        QpdfVersion = EngineStatus.QpdfVersion;
+        ResolvedQpdfPath = EngineStatus.ResolvedQpdfPath;
 
         var currentThemeVal = _settingsStore.Current.ThemeVariant;
         _selectedTheme = AvailableThemes.FirstOrDefault(t => t.Value.Equals(currentThemeVal, StringComparison.OrdinalIgnoreCase)) ?? AvailableThemes[0];
@@ -320,8 +358,11 @@ public partial class SettingsViewModel : ViewModelBase
         {
             theme.RefreshLabel();
         }
+    }
 
-        _ = RefreshQpdfStatusAsync();
+    public async Task RefreshQpdfStatusAsync()
+    {
+        await EngineStatus.RefreshAsync();
     }
 
     /// <summary>
@@ -404,29 +445,6 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 异步刷新 QPDF 引擎的探测路径与版本可用性
-    /// </summary>
-    public async Task RefreshQpdfStatusAsync()
-    {
-        var resolved = QpdfLocator.Locate(CustomQpdfPath);
-        ResolvedQpdfPath = resolved;
-
-        if (!string.IsNullOrWhiteSpace(resolved))
-        {
-            var (valid, ver, _) = await QpdfLocator.CheckVersionAsync(resolved);
-            IsQpdfValid = valid;
-            QpdfVersion = valid ? $"v{ver}" : "无效版本";
-        }
-        else
-        {
-            IsQpdfValid = false;
-            QpdfVersion = "未检测到";
-        }
-
-        OnQpdfStatusChanged?.Invoke();
-    }
-
-    /// <summary>
     /// 弹出文件选择对话框供用户手动指定外部 qpdf.exe
     /// </summary>
     [RelayCommand]
@@ -438,6 +456,7 @@ public partial class SettingsViewModel : ViewModelBase
             CustomQpdfPath = exe;
             _settingsStore.Current.CustomQpdfPath = exe;
             _settingsStore.Save();
+            QpdfLocator.Reset();
             await RefreshQpdfStatusAsync();
         }
     }
@@ -451,6 +470,7 @@ public partial class SettingsViewModel : ViewModelBase
         CustomQpdfPath = null;
         _settingsStore.Current.CustomQpdfPath = null;
         _settingsStore.Save();
+        QpdfLocator.Reset();
         await RefreshQpdfStatusAsync();
     }
 
@@ -460,35 +480,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     public async Task DownloadAndInstallEngineAsync()
     {
-        if (IsDownloadingEngine) return;
-
-        IsDownloadingEngine = true;
-        EngineDownloadProgress = 0;
-        EngineDownloadStatusText = "正在连接 GitHub...";
-
-        var progress = new Progress<(double Percentage, string StatusMessage)>(p =>
-        {
-            EngineDownloadProgress = p.Percentage;
-            EngineDownloadStatusText = p.StatusMessage;
-        });
-
-        try
-        {
-            var exePath = await _downloaderService.DownloadAndInstallAsync(progress);
-            CustomQpdfPath = null; // 清除自定义路径以使用默认检测到的本地路径
-            _settingsStore.Current.CustomQpdfPath = null;
-            _settingsStore.Save();
-            await RefreshQpdfStatusAsync();
-        }
-        catch (Exception ex)
-        {
-            EngineDownloadStatusText = $"下载失败: {ex.Message}";
-        }
-        finally
-        {
-            await Task.Delay(1500);
-            IsDownloadingEngine = false;
-        }
+        await EngineStatus.DownloadEngine();
     }
 
     /// <summary>

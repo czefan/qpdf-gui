@@ -51,4 +51,27 @@ public record EncryptOptions
 
     [JsonPropertyName("256bit")]
     public Encrypt256BitOptions Aes256 { get; init; } = new();
+
+    /// <summary>
+    /// 标准化加密选项：
+    /// 1. 若 OwnerPassword 为空且 UserPassword 非空，将 OwnerPassword 回退为与 UserPassword 相同；
+    /// 2. 若两者皆为空白，返回 null，表示无有效密码不可执行；
+    /// 3. 返回规范化后的新配置实例。
+    /// </summary>
+    public EncryptOptions? Normalize()
+    {
+        var u = UserPassword ?? string.Empty;
+        var o = !string.IsNullOrWhiteSpace(OwnerPassword) ? OwnerPassword : u;
+
+        if (string.IsNullOrWhiteSpace(u) && string.IsNullOrWhiteSpace(o))
+        {
+            return null;
+        }
+
+        return this with
+        {
+            UserPassword = u,
+            OwnerPassword = o
+        };
+    }
 }

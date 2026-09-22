@@ -1,6 +1,12 @@
-using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QpdfGui.App.Services;
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+internal partial class SettingsJsonContext : JsonSerializerContext
+{
+}
 
 /// <summary>
 /// 应用程序全局用户偏好配置实体
@@ -35,44 +41,18 @@ public class AppSettings
 
 /// <summary>
 /// 负责将 <see cref="AppSettings"/> 序列化并持久化存储的服务。
-/// 采用“便携目录优先”策略：优先将 settings.json 存放在可执行文件同级目录；
-/// 若当前目录只读（如位于受限系统目录），则自动平滑回退至系统的 AppData 目录。
+/// 采用“便携目录优先”策略：优先加载或保存在可执行文件同级目录；
+/// 若当前目录无写权限，则自动平滑回退至系统的 AppData 目录。
+/// 杜绝启动时试写探测文件。
 /// </summary>
 public class SettingsStore
 {
-    private static readonly string SettingsFilePath = ResolveSettingsFilePath();
+    private string? _resolvedPath;
 
-    private static string ResolveSettingsFilePath()
-    {
-        // 1. 优先尝试便携模式：应用程序所在根目录
-        var baseDir = AppContext.BaseDirectory;
-        var portablePath = Path.Combine(baseDir, "settings.json");
-
-        // 如果便携配置已经存在，或者当前目录具有写权限，直接使用便携路径
-        if (File.Exists(portablePath))
-        {
-            return portablePath;
-        }
-
-        try
-        {
-            var testFile = Path.Combine(baseDir, ".write_test");
-            File.WriteAllText(testFile, "test");
-            File.Delete(testFile);
-            return portablePath;
-        }
-        catch
-        {
-            // 当前目录没有写权限，回退到系统 AppData 目录
-        }
-
-        // 2. 回退模式：%APPDATA%/qpdf-gui/settings.json
-        var appDataFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "qpdf-gui");
-
-        return Path.Combine(appDataFolder, "settings.json");
-    }
+    /// <summary>
+    /// 当设置发生变更并保存成功时触发
+    /// </summary>
+    public event Action<AppSettings>? Changed;
 
     /// <summary>
     /// 当前生效的应用程序配置实例
@@ -89,18 +69,37 @@ public class SettingsStore
     /// </summary>
     public void Load()
     {
-        try
+        var baseDir = AppContext.BaseDirectory;
+        var portablePath = Path.Combine(baseDir, "settings.json");
+        var appDataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "qpdf-gui",
+            "settings.json");
+
+        if (File.Exists(portablePath))
         {
-            if (File.Exists(SettingsFilePath))
+            _resolvedPath = portablePath;
+        }
+        else if (File.Exists(appDataPath))
+        {
+            _resolvedPath = appDataPath;
+        }
+
+        if (_resolvedPath != null && File.Exists(_resolvedPath))
+        {
+            try
             {
-                var json = File.ReadAllText(SettingsFilePath);
-                Current = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                var json = File.ReadAllText(_resolvedPath);
+                Current = (AppSettings?)System.Text.Json.JsonSerializer.Deserialize(
+                    json,
+                    typeof(AppSettings),
+                    SettingsJsonContext.Default) ?? new AppSettings();
                 return;
             }
-        }
-        catch
-        {
-            // 加载失败时使用默认设置
+            catch
+            {
+                // 加载失败时使用默认设置
+            }
         }
 
         Current = new AppSettings();
@@ -113,14 +112,46 @@ public class SettingsStore
     {
         try
         {
-            var folder = Path.GetDirectoryName(SettingsFilePath);
+            var targetPath = _resolvedPath;
+            if (targetPath == null)
+            {
+                // 首次保存，优先尝试便携模式
+                var baseDir = AppContext.BaseDirectory;
+                var portablePath = Path.Combine(baseDir, "settings.json");
+                try
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(
+                        Current,
+                        typeof(AppSettings),
+                        SettingsJsonContext.Default);
+                    File.WriteAllText(portablePath, json);
+                    _resolvedPath = portablePath;
+                    Changed?.Invoke(Current);
+                    return;
+                }
+                catch
+                {
+                    // 若无写入权限，回退到 AppData
+                    targetPath = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "qpdf-gui",
+                        "settings.json");
+                    _resolvedPath = targetPath;
+                }
+            }
+
+            var folder = Path.GetDirectoryName(targetPath);
             if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
 
-            var json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(SettingsFilePath, json);
+            var serialized = System.Text.Json.JsonSerializer.Serialize(
+                Current,
+                typeof(AppSettings),
+                SettingsJsonContext.Default);
+            File.WriteAllText(targetPath, serialized);
+            Changed?.Invoke(Current);
         }
         catch
         {

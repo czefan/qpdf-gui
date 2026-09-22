@@ -1,35 +1,33 @@
+using QpdfGui.Core.Inspect;
 using QpdfGui.Core.Jobs;
 using QpdfGui.Core.Process;
-using QpdfGui.Core.Services;
 using Xunit;
 
 namespace QpdfGui.Core.Tests;
 
 /// <summary>
 /// QPDF 核心执行与集成验证测试
-/// 依赖 tests/fixtures/three-pages.pdf 真实调用 qpdf.exe 执行端到端任务
+/// 依赖 tests/fixtures/three-pages.pdf 真实调用 qpdf.exe 与 QpdfRunner / PdfInspector
 /// </summary>
 public class QpdfServiceIntegrationTests
 {
     private readonly string _qpdfExe;
     private readonly string _samplePdf;
-    private readonly QpdfService _service;
+    private readonly QpdfRunner _runner = new();
+    private readonly PdfInspector _inspector;
 
     public QpdfServiceIntegrationTests()
     {
         var rootDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         _qpdfExe = Path.Combine(rootDir, "runtimes", QpdfLocator.GetCurrentRid(), "native", OperatingSystem.IsWindows() ? "qpdf.exe" : "qpdf");
         _samplePdf = Path.Combine(rootDir, "tests", "fixtures", "three-pages.pdf");
-        _service = new QpdfService(new QpdfRunner(), () => _qpdfExe);
+        _inspector = new PdfInspector(_qpdfExe);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task QpdfLocator_CheckVersion_Succeeds()
     {
-        if (!File.Exists(_qpdfExe))
-        {
-            return;
-        }
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
 
         var (isValid, version, error) = await QpdfLocator.CheckVersionAsync(_qpdfExe);
         Assert.True(isValid, error);
@@ -37,10 +35,10 @@ public class QpdfServiceIntegrationTests
         Assert.StartsWith("12.", version);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task Encrypt_Decrypt_Flow_Succeeds()
     {
-        if (!File.Exists(_qpdfExe)) return;
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
         Assert.True(File.Exists(_samplePdf), $"测试固件未找到: {_samplePdf}");
 
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -49,52 +47,77 @@ public class QpdfServiceIntegrationTests
         try
         {
             // 1. 探查原文件
-            var originalInfo = await _service.InspectAsync(_samplePdf);
+            var originalInfo = await _inspector.InspectAsync(_samplePdf);
             Assert.True(originalInfo.IsValid);
             Assert.False(originalInfo.IsEncrypted);
             Assert.Equal(3, originalInfo.PageCount);
 
-            // 2. 提取前 2 页（验证 ExtractAsync 与 empty job 规范）
+            // 2. 提取前 2 页
             var extractedPdf = Path.Combine(tempDir, "extracted.pdf");
-            var extractResult = await _service.ExtractAsync(_samplePdf, extractedPdf, "1-2");
+            var extractJob = new QpdfJob
+            {
+                Empty = "",
+                OutputFile = extractedPdf,
+                Pages = [new PagesSpec { File = _samplePdf, Range = "1-2" }]
+            };
+            var extractResult = await _runner.RunJobAsync(extractJob, _qpdfExe);
             Assert.True(extractResult.IsCompleted, extractResult.StandardError);
 
-            var extractedInfo = await _service.InspectAsync(extractedPdf);
+            var extractedInfo = await _inspector.InspectAsync(extractedPdf);
             Assert.Equal(2, extractedInfo.PageCount);
 
             // 3. 加密文件
             var encryptedPdf = Path.Combine(tempDir, "encrypted.pdf");
-            var encResult = await _service.EncryptAsync(extractedPdf, encryptedPdf, new EncryptOptions
+            var encJob = new QpdfJob
             {
-                UserPassword = "mypassword",
-                OwnerPassword = "ownerpwd",
-                Aes256 = new Encrypt256BitOptions
+                InputFile = extractedPdf,
+                OutputFile = encryptedPdf,
+                Encrypt = new EncryptOptions
                 {
-                    Print = "none"
+                    UserPassword = "mypassword",
+                    OwnerPassword = "ownerpwd",
+                    Aes256 = new Encrypt256BitOptions
+                    {
+                        Print = "none"
+                    }
                 }
-            });
+            };
+            var encResult = await _runner.RunJobAsync(encJob, _qpdfExe);
             Assert.True(encResult.IsCompleted, encResult.StandardError);
 
             // 探查加密文件
-            var encInfoNoPwd = await _service.InspectAsync(encryptedPdf);
+            var encInfoNoPwd = await _inspector.InspectAsync(encryptedPdf);
             Assert.True(encInfoNoPwd.IsEncrypted);
             Assert.True(encInfoNoPwd.RequiresPassword);
 
-            var encInfoWithPwd = await _service.InspectAsync(encryptedPdf, "mypassword");
+            var encInfoWithPwd = await _inspector.InspectAsync(encryptedPdf, "mypassword");
             Assert.Equal(2, encInfoWithPwd.PageCount);
 
             // 4. 解密文件
             var decryptedPdf = Path.Combine(tempDir, "decrypted.pdf");
-            var decResult = await _service.DecryptAsync(encryptedPdf, decryptedPdf, "mypassword");
+            var decJob = new QpdfJob
+            {
+                InputFile = encryptedPdf,
+                OutputFile = decryptedPdf,
+                Password = "mypassword",
+                Decrypt = ""
+            };
+            var decResult = await _runner.RunJobAsync(decJob, _qpdfExe);
             Assert.True(decResult.IsCompleted, decResult.StandardError);
 
-            var decInfo = await _service.InspectAsync(decryptedPdf);
+            var decInfo = await _inspector.InspectAsync(decryptedPdf);
             Assert.False(decInfo.IsEncrypted);
             Assert.Equal(2, decInfo.PageCount);
 
             // 5. 旋转页面
             var rotatedPdf = Path.Combine(tempDir, "rotated.pdf");
-            var rotResult = await _service.RotateAsync(decryptedPdf, rotatedPdf, "+90:1-z");
+            var rotJob = new QpdfJob
+            {
+                InputFile = decryptedPdf,
+                OutputFile = rotatedPdf,
+                Rotate = ["+90:1-z"]
+            };
+            var rotResult = await _runner.RunJobAsync(rotJob, _qpdfExe);
             Assert.True(rotResult.IsCompleted, rotResult.StandardError);
             Assert.True(File.Exists(rotatedPdf));
         }
@@ -104,10 +127,10 @@ public class QpdfServiceIntegrationTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task MergeAsync_WithEmptyInput_Succeeds()
     {
-        if (!File.Exists(_qpdfExe)) return;
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
         Assert.True(File.Exists(_samplePdf), $"测试固件未找到: {_samplePdf}");
 
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -116,17 +139,22 @@ public class QpdfServiceIntegrationTests
         try
         {
             var outputPath = Path.Combine(tempDir, "merged_output.pdf");
-            var pages = new List<PagesSpec>
+            var job = new QpdfJob
             {
-                new() { File = _samplePdf, Range = "1-2" },
-                new() { File = _samplePdf, Range = "3" }
+                Empty = "",
+                OutputFile = outputPath,
+                Pages =
+                [
+                    new PagesSpec { File = _samplePdf, Range = "1-2" },
+                    new PagesSpec { File = _samplePdf, Range = "3" }
+                ]
             };
 
-            var result = await _service.MergeAsync(pages, outputPath);
+            var result = await _runner.RunJobAsync(job, _qpdfExe);
             Assert.True(result.IsCompleted, result.StandardError);
             Assert.True(File.Exists(outputPath));
 
-            var info = await _service.InspectAsync(outputPath);
+            var info = await _inspector.InspectAsync(outputPath);
             Assert.Equal(3, info.PageCount);
         }
         finally
@@ -135,10 +163,10 @@ public class QpdfServiceIntegrationTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SplitByRangesAsync_GeneratesMultipleFiles()
     {
-        if (!File.Exists(_qpdfExe)) return;
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
         Assert.True(File.Exists(_samplePdf), $"测试固件未找到: {_samplePdf}");
 
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -147,9 +175,18 @@ public class QpdfServiceIntegrationTests
         try
         {
             var ranges = new List<string> { "1-1", "2-3" };
-            var result = await _service.SplitByRangesAsync(_samplePdf, ranges, tempDir);
-
-            Assert.True(result.IsCompleted, result.StandardError);
+            foreach (var r in ranges)
+            {
+                var outPath = Path.Combine(tempDir, $"split_{r}.pdf");
+                var job = new QpdfJob
+                {
+                    Empty = "",
+                    OutputFile = outPath,
+                    Pages = [new PagesSpec { File = _samplePdf, Range = r }]
+                };
+                var res = await _runner.RunJobAsync(job, _qpdfExe);
+                Assert.True(res.IsCompleted, res.StandardError);
+            }
 
             var files = Directory.GetFiles(tempDir, "*.pdf");
             Assert.Equal(2, files.Length);
@@ -160,10 +197,10 @@ public class QpdfServiceIntegrationTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task EncryptAsync_UserPasswordOnly_Succeeds()
     {
-        if (!File.Exists(_qpdfExe)) return;
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
         Assert.True(File.Exists(_samplePdf), $"测试固件未找到: {_samplePdf}");
 
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -172,21 +209,30 @@ public class QpdfServiceIntegrationTests
         try
         {
             var encryptedPdf = Path.Combine(tempDir, "user_only.pdf");
-            // 当只提供 UserPassword 时，OwnerPassword 回退为相同值，qpdf 256 位加密能正常工作
-            var result = await _service.EncryptAsync(_samplePdf, encryptedPdf, new EncryptOptions
+            var options = new EncryptOptions
             {
                 UserPassword = "open123",
-                OwnerPassword = "open123",
+                OwnerPassword = null,
                 Aes256 = new Encrypt256BitOptions
                 {
                     Print = "full"
                 }
-            });
+            }.Normalize();
+            Assert.NotNull(options);
+
+            var job = new QpdfJob
+            {
+                InputFile = _samplePdf,
+                OutputFile = encryptedPdf,
+                Encrypt = options
+            };
+
+            var result = await _runner.RunJobAsync(job, _qpdfExe);
 
             Assert.True(result.IsCompleted, result.StandardError);
             Assert.True(File.Exists(encryptedPdf));
 
-            var info = await _service.InspectAsync(encryptedPdf, "open123");
+            var info = await _inspector.InspectAsync(encryptedPdf, "open123");
             Assert.Equal(3, info.PageCount);
         }
         finally
@@ -195,10 +241,10 @@ public class QpdfServiceIntegrationTests
         }
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task RepairAsync_Succeeds_AndCollectsWarnings()
     {
-        if (!File.Exists(_qpdfExe)) return;
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
         Assert.True(File.Exists(_samplePdf), $"测试固件未找到: {_samplePdf}");
 
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -207,17 +253,88 @@ public class QpdfServiceIntegrationTests
         try
         {
             var repairedPdf = Path.Combine(tempDir, "repaired.pdf");
-            var result = await _service.RepairAsync(_samplePdf, repairedPdf);
+            var job = new QpdfJob
+            {
+                InputFile = _samplePdf,
+                OutputFile = repairedPdf,
+                ObjectStreams = "generate"
+            };
+
+            var result = await _runner.RunJobAsync(job, _qpdfExe);
 
             Assert.True(result.IsCompleted, result.StandardError);
             Assert.True(File.Exists(repairedPdf));
 
-            var info = await _service.InspectAsync(repairedPdf);
+            var info = await _inspector.InspectAsync(repairedPdf);
             Assert.Equal(3, info.PageCount);
         }
         finally
         {
             Directory.Delete(tempDir, true);
         }
+    }
+
+    [SkippableFact]
+    public async Task RepairAsync_DamagedPdf_CollectsRealWarnings()
+    {
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
+        var rootDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var damagedPdf = Path.Combine(rootDir, "tests", "fixtures", "damaged.pdf");
+        Assert.True(File.Exists(damagedPdf), $"损坏测试固件未找到: {damagedPdf}");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var repairedPdf = Path.Combine(tempDir, "damaged_repaired.pdf");
+            var job = new QpdfJob
+            {
+                InputFile = damagedPdf,
+                OutputFile = repairedPdf,
+                ObjectStreams = "generate"
+            };
+
+            var result = await _runner.RunJobAsync(job, _qpdfExe);
+
+            // 损坏文件修复应当成功（ExitCode 3/0），并抓取到真实 warnings
+            Assert.True(result.IsCompleted, result.StandardError);
+            Assert.True(File.Exists(repairedPdf));
+            Assert.NotEmpty(result.Warnings);
+            // 确保 operation succeeded with warnings 总结行已被过滤
+            Assert.DoesNotContain(result.Warnings, w => w.Contains("operation succeeded with warnings"));
+
+            var info = await _inspector.InspectAsync(repairedPdf);
+            Assert.Equal(3, info.PageCount);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [SkippableFact]
+    public async Task Inspect_EncryptedFixtures_IdentifiesPasswordAndEncryption()
+    {
+        Skip.If(!File.Exists(_qpdfExe), "QPDF 引擎不存在，跳过集成测试");
+        var rootDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var userEncryptedPdf = Path.Combine(rootDir, "tests", "fixtures", "encrypted-user.pdf");
+        var ownerOnlyPdf = Path.Combine(rootDir, "tests", "fixtures", "encrypted-owner-only.pdf");
+        Assert.True(File.Exists(userEncryptedPdf), $"固件未找到: {userEncryptedPdf}");
+        Assert.True(File.Exists(ownerOnlyPdf), $"固件未找到: {ownerOnlyPdf}");
+
+        // 1. user encrypted 需要密码
+        var userInfoNoPwd = await _inspector.InspectAsync(userEncryptedPdf);
+        Assert.True(userInfoNoPwd.IsEncrypted);
+        Assert.True(userInfoNoPwd.RequiresPassword);
+
+        var userInfoWithPwd = await _inspector.InspectAsync(userEncryptedPdf, "user123");
+        Assert.Equal(3, userInfoWithPwd.PageCount);
+
+        // 2. owner-only 加密无需用户密码即可打开探查
+        var ownerInfo = await _inspector.InspectAsync(ownerOnlyPdf);
+        Assert.True(ownerInfo.IsEncrypted);
+        Assert.False(ownerInfo.RequiresPassword);
+        Assert.Equal(3, ownerInfo.PageCount);
     }
 }

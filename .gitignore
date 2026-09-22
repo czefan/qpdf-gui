@@ -21,7 +21,6 @@ Desktop.ini
 .DS_Store
 
 ## Output & Temp Artifacts
-scratch/
 settings.json
 dist*/
 

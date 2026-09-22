@@ -138,4 +138,15 @@
     <sys:String x:Key="Banner_DownloadAction">一键下载</sys:String>
     <sys:String x:Key="Banner_BrowseAction">指定路径...</sys:String>
     <sys:String x:Key="Settings_DownloadEngine">一键在线下载 / 重装</sys:String>
+
+    <!-- 运行与诊断反馈 -->
+    <sys:String x:Key="Status_WarningsTitle">QPDF 提示与警告记录：</sys:String>
+    <sys:String x:Key="Status_WarningsCount">{0} 条提示/警告</sys:String>
+    <sys:String x:Key="Status_ErrorsTitle">执行错误详情：</sys:String>
+    <sys:String x:Key="Action_Copied">已复制</sys:String>
+    <sys:String x:Key="Split_ModeExtract">提取单个页码范围</sys:String>
+    <sys:String x:Key="Split_ExtractRange">提取页码：</sys:String>
+    <sys:String x:Key="Split_PatternHint">使用 %d 占位符生成多文件，如 document_%d.pdf</sys:String>
+    <sys:String x:Key="Merge_ImportExpression">从表达式导入</sys:String>
+    <sys:String x:Key="Merge_ImportPlaceholder">输入表达式导入片段，如：1.1-1.11, 2.1, 1.8-1.55</sys:String>
 </ResourceDictionary>

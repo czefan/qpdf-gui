@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Fetch QPDF Engine
+        shell: pwsh
+        run: ./tools/fetch-qpdf.ps1
+
+      - name: Run CI Guards
+        shell: pwsh
+        run: ./tools/ci-guards.ps1
+
+      - name: Run Tests
+        run: dotnet test --configuration Release --verbosity normal
+
+      - name: Build All Projects (TreatWarningsAsErrors)
+        run: dotnet build --configuration Release --no-incremental

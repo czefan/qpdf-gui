@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:QpdfGui.App.ViewModels.Tools"
+             xmlns:controls="using:QpdfGui.App.Views.Controls"
+             x:Class="QpdfGui.App.Views.Controls.OutputCard"
+             x:DataType="tools:ToolViewModel">
+    <Border Classes="ContentCard">
+        <StackPanel Spacing="10">
+            <TextBlock Text="{DynamicResource Output_Label}" FontSize="14" FontWeight="SemiBold" />
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                <!-- 第一行：保存目录 -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Output_DirectoryLabel}" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource SemiColorText1}" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding OutputDirectory}"
+                         PlaceholderText="{DynamicResource Output_DefaultDirHint}"
+                         Classes="clearButton" VerticalAlignment="Center" />
+                <Button Grid.Row="0" Grid.Column="2" Command="{Binding BrowseOutputFolderCommand}"
+                        Content="{DynamicResource Output_BrowseFolder}" Margin="8,0,0,0" />
+
+                <!-- 第二行：输出名称 -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Output_FileNameLabel}" FontSize="12.5" VerticalAlignment="Center" Margin="0,10,10,0" Foreground="{DynamicResource SemiColorText1}" />
+                <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding OutputFileName}"
+                         Margin="0,10,0,0"
+                         Classes="clearButton" VerticalAlignment="Center" />
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

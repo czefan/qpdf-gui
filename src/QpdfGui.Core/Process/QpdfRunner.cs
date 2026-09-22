@@ -24,7 +24,17 @@ public partial class QpdfRunner
         CancellationToken cancellationToken = default)
     {
         var qpdfExe = QpdfLocator.Locate(customQpdfPath)
-            ?? throw new FileNotFoundException("未找到 qpdf 可执行文件，请在设置中配置或将其放置在 runtimes 目录下。");
+            ?? throw new FileNotFoundException("QPDF executable not found. Please configure path in settings or download it.");
+
+        // 确保目标输出目录存在
+        if (!string.IsNullOrEmpty(job.OutputFile))
+        {
+            var dir = Path.GetDirectoryName(job.OutputFile);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+        }
 
         // 默认启用进度输出
         job.Progress ??= "";
@@ -50,7 +60,7 @@ public partial class QpdfRunner
         CancellationToken cancellationToken = default)
     {
         var qpdfExe = QpdfLocator.Locate(customQpdfPath)
-            ?? throw new FileNotFoundException("未找到 qpdf 可执行文件。");
+            ?? throw new FileNotFoundException("QPDF executable not found.");
 
         return await RunProcessAsync(qpdfExe, arguments, null, progress, cancellationToken);
     }
@@ -82,14 +92,20 @@ public partial class QpdfRunner
         var stderrPipe = PipeTarget.ToDelegate(line =>
         {
             stderrBuilder.AppendLine(line);
-            var trimmed = line.Trim();
-            if (trimmed.Contains("warning", StringComparison.OrdinalIgnoreCase))
+            var warning = ExtractWarning(line);
+            if (!string.IsNullOrWhiteSpace(warning))
             {
-                warnings.Add(trimmed);
+                warnings.Add(warning);
             }
-            else if (trimmed.Contains("error", StringComparison.OrdinalIgnoreCase))
+            else
             {
-                errors.Add(trimmed);
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase) ||
+                    trimmed.StartsWith("qpdf: ERROR:", StringComparison.OrdinalIgnoreCase) ||
+                    (trimmed.Contains("error:", StringComparison.OrdinalIgnoreCase) && !trimmed.StartsWith("qpdf: operation", StringComparison.OrdinalIgnoreCase)))
+                {
+                    errors.Add(trimmed);
+                }
             }
         });
 
@@ -99,7 +115,21 @@ public partial class QpdfRunner
             .WithStandardOutputPipe(stdoutPipe)
             .WithStandardErrorPipe(stderrPipe);
 
-        var execResult = await cmd.ExecuteAsync(cancellationToken);
+        CommandResult execResult;
+        try
+        {
+            execResult = await cmd.ExecuteAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // 取消任务时，清理可能残留的半成品输出文件
+            if (!string.IsNullOrEmpty(outputFile) && File.Exists(outputFile))
+            {
+                try { File.Delete(outputFile); } catch { /* 忽略清理异常 */ }
+            }
+            throw;
+        }
+
         sw.Stop();
 
         // 确保任务完成时报告 100% 进度
@@ -118,5 +148,54 @@ public partial class QpdfRunner
             StandardOutput = stdoutBuilder.ToString(),
             StandardError = stderrBuilder.ToString()
         };
+    }
+
+    /// <summary>
+    /// 从标准错误行中提取净化后的警告消息；若属于总结行或非警告则返回 null
+    /// </summary>
+    public static string? ExtractWarning(string line)
+    {
+        var trimmed = line.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return null;
+
+        // 过滤总结行
+        if (trimmed.StartsWith("qpdf: operation succeeded with warnings", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("qpdf: operation succeeded", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (trimmed.StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase))
+        {
+            var content = trimmed["WARNING:".Length..].Trim();
+            return StripPathPrefix(content);
+        }
+
+        if (trimmed.StartsWith("qpdf: WARNING:", StringComparison.OrdinalIgnoreCase))
+        {
+            var content = trimmed["qpdf: WARNING:".Length..].Trim();
+            return StripPathPrefix(content);
+        }
+
+        return null;
+    }
+
+    private static string StripPathPrefix(string message)
+    {
+        int idx = message.IndexOf(": ", StringComparison.Ordinal);
+        if (idx > 0)
+        {
+            var prefix = message[..idx];
+            if (prefix.Contains(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var parenIdx = prefix.IndexOf('(');
+                if (parenIdx >= 0 && parenIdx < idx)
+                {
+                    return $"{prefix[parenIdx..].Trim()} {message[(idx + 2)..].Trim()}";
+                }
+                return message[(idx + 2)..].Trim();
+            }
+        }
+        return message;
     }
 }

@@ -138,4 +138,15 @@
     <sys:String x:Key="Banner_DownloadAction">Download</sys:String>
     <sys:String x:Key="Banner_BrowseAction">Browse...</sys:String>
     <sys:String x:Key="Settings_DownloadEngine">Download / Reinstall Online</sys:String>
+
+    <!-- Diagnostics & Feedback -->
+    <sys:String x:Key="Status_WarningsTitle">QPDF Diagnostics &amp; Warnings:</sys:String>
+    <sys:String x:Key="Status_WarningsCount">{0} warning(s)</sys:String>
+    <sys:String x:Key="Status_ErrorsTitle">Execution Error Details:</sys:String>
+    <sys:String x:Key="Action_Copied">Copied</sys:String>
+    <sys:String x:Key="Split_ModeExtract">Extract Single Page Range</sys:String>
+    <sys:String x:Key="Split_ExtractRange">Extract Pages:</sys:String>
+    <sys:String x:Key="Split_PatternHint">Use %d placeholder for multiple output files, e.g. document_%d.pdf</sys:String>
+    <sys:String x:Key="Merge_ImportExpression">Import from Expression</sys:String>
+    <sys:String x:Key="Merge_ImportPlaceholder">Enter expression to import fragments, e.g.: 1.1-1.11, 2.1, 1.8-1.55</sys:String>
 </ResourceDictionary>

@@ -1,269 +1,235 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using QpdfGui.App.Services;
+using QpdfGui.Core.Inspect;
 using QpdfGui.Core.Jobs;
+using QpdfGui.Core.Process;
 using QpdfGui.Core.Services;
 
 namespace QpdfGui.App.ViewModels.Tools;
 
-/// <summary>
-/// 拆分模式枚举
-/// </summary>
 public enum SplitMode
 {
-    /// <summary>
-    /// 按指定页码范围列表拆分为多个独立文件（如 1-2, 3-5, 6-10）
-    /// </summary>
+    FixedPages,
     SplitRanges,
-
-    /// <summary>
-    /// 按固定连续页数切分为多个文件（支持指定切分的作用范围）
-    /// </summary>
-    FixedPages
+    ExtractSingle
 }
 
 /// <summary>
 /// PDF 拆分与多文件切分 ViewModel
-/// 支持按范围列表切分为多个文件，或按固定页数连续分卷切分（可指定作用范围）
+/// 采用三选一清晰模式：每 N 页 / 按多个范围 / 提取单个范围
 /// </summary>
-public partial class SplitViewModel : SingleFileToolViewModel
+public partial class SplitViewModel : ToolViewModel
 {
-    /// <summary>
-    /// 当前选定的拆分模式
-    /// </summary>
     [ObservableProperty]
-    private SplitMode _mode = SplitMode.SplitRanges;
+    private SplitMode _mode = SplitMode.FixedPages;
 
-    /// <summary>
-    /// 基础作用页码范围（默认为全本，如 1-72 或 1-z；对固定切分和范围切分均生效）
-    /// </summary>
-    [ObservableProperty]
-    private string _baseRange = "1-z";
-
-    /// <summary>
-    /// 分卷拆分范围列表（如 "1-2, 3-5, 6-10"）
-    /// </summary>
-    [ObservableProperty]
-    private string _customRanges = "1-z";
-
-    /// <summary>
-    /// 固定切分页数（每个拆分文件包含多少页）
-    /// </summary>
     [ObservableProperty]
     private int _fixedPagesCount = 1;
 
-    /// <summary>
-    /// 实时切分预估说明
-    /// </summary>
     [ObservableProperty]
-    private string? _splitPreviewText;
+    private string _fixedScopeRange = "1-z";
 
-    public SplitViewModel(
-        IQpdfService qpdfService,
-        IDialogService dialogService,
-        SettingsStore settingsStore)
-        : base(qpdfService, dialogService, settingsStore)
-    {
-    }
+    [ObservableProperty]
+    private string _customRanges = "1-2, 3-5";
 
-    /// <summary>
-    /// 是否为“按范围分卷切分”模式
-    /// </summary>
-    public bool IsSplitRangesMode
-    {
-        get => Mode == SplitMode.SplitRanges;
-        set
-        {
-            if (value && Mode != SplitMode.SplitRanges)
-            {
-                Mode = SplitMode.SplitRanges;
-            }
-        }
-    }
+    [ObservableProperty]
+    private string _singleExtractRange = "1";
 
-    /// <summary>
-    /// 是否为“按固定页数连续切分”模式
-    /// </summary>
-    public bool IsFixedPagesMode
-    {
-        get => Mode == SplitMode.FixedPages;
-        set
-        {
-            if (value && Mode != SplitMode.FixedPages)
-            {
-                Mode = SplitMode.FixedPages;
-            }
-        }
-    }
+    public bool IsFixedPagesMode => Mode == SplitMode.FixedPages;
+    public bool IsSplitRangesMode => Mode == SplitMode.SplitRanges;
+    public bool IsExtractSingleMode => Mode == SplitMode.ExtractSingle;
 
     partial void OnModeChanged(SplitMode value)
     {
-        OnPropertyChanged(nameof(IsSplitRangesMode));
         OnPropertyChanged(nameof(IsFixedPagesMode));
+        OnPropertyChanged(nameof(IsSplitRangesMode));
+        OnPropertyChanged(nameof(IsExtractSingleMode));
         UpdateDefaultOutputPath();
-        UpdateSplitPreview();
         UpdateEquivalentCommand();
     }
 
-    partial void OnBaseRangeChanged(string value)
+    partial void OnFixedPagesCountChanged(int value) => UpdateEquivalentCommand();
+    partial void OnFixedScopeRangeChanged(string value) => UpdateEquivalentCommand();
+    partial void OnCustomRangesChanged(string value) => UpdateEquivalentCommand();
+    partial void OnSingleExtractRangeChanged(string value) => UpdateEquivalentCommand();
+
+    public SplitViewModel(
+        IDialogService dialogService,
+        SettingsStore settingsStore,
+        QpdfRunner? runner = null,
+        PdfInspector? inspector = null)
+        : base(dialogService, settingsStore, runner, inspector)
     {
-        UpdateSplitPreview();
-        UpdateEquivalentCommand();
     }
 
-    partial void OnCustomRangesChanged(string value)
-    {
-        UpdateSplitPreview();
-        UpdateEquivalentCommand();
-    }
-
-    partial void OnFixedPagesCountChanged(int value)
-    {
-        UpdateSplitPreview();
-        UpdateEquivalentCommand();
-    }
-
-    /// <inheritdoc />
     protected override void UpdateDefaultOutputPath()
     {
         if (string.IsNullOrWhiteSpace(InputPath)) return;
+        var dir = SettingsStore.Current.DefaultOutputDirectory;
+        var baseName = Path.GetFileNameWithoutExtension(InputPath);
 
-        if (PageCount > 0)
+        switch (Mode)
         {
-            BaseRange = $"1-{PageCount}";
-            CustomRanges = $"1-{PageCount}";
+            case SplitMode.FixedPages:
+                OutputFileName = $"{baseName}_page_%d.pdf";
+                OutputDirectory = !string.IsNullOrWhiteSpace(dir) ? dir : Path.GetDirectoryName(InputPath);
+                break;
+            case SplitMode.SplitRanges:
+                OutputFileName = $"{baseName}_split";
+                OutputDirectory = !string.IsNullOrWhiteSpace(dir) ? dir : Path.GetDirectoryName(InputPath);
+                break;
+            case SplitMode.ExtractSingle:
+                OutputPath = OutputPathResolver.ResolveUniquePath(dir, InputPath, "extracted");
+                break;
         }
-        else
-        {
-            BaseRange = "1-z";
-            CustomRanges = "1-z";
-        }
-        UpdateSplitPreview();
-
-        var targetDir = !string.IsNullOrWhiteSpace(SettingsStore.Current.DefaultOutputDirectory) &&
-                        Directory.Exists(SettingsStore.Current.DefaultOutputDirectory)
-            ? SettingsStore.Current.DefaultOutputDirectory
-            : Path.GetDirectoryName(InputPath);
-
-        OutputPath = OutputPathResolver.ResolveSplitPattern(targetDir, InputPath);
     }
 
-    /// <summary>
-    /// 计算并更新切分预览说明文本
-    /// </summary>
-    private void UpdateSplitPreview()
+    public override QpdfJob? BuildJob()
     {
-        if (string.IsNullOrWhiteSpace(InputPath) || PageCount <= 0)
+        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath))
         {
-            SplitPreviewText = null;
-            return;
+            return null;
         }
 
-        if (Mode == SplitMode.SplitRanges)
+        switch (Mode)
         {
-            var parts = ParseRangeList(CustomRanges);
-            if (parts.Count > 1)
-            {
-                SplitPreviewText = $"💡 将按指定范围切分为 {parts.Count} 个独立文档（如 _{parts[0]}.pdf, _{parts[1]}.pdf ...）";
-            }
-            else if (parts.Count == 1)
-            {
-                SplitPreviewText = $"💡 将提取第 {parts[0]} 页为独立文档";
-            }
-            else
-            {
-                SplitPreviewText = null;
-            }
-        }
-        else
-        {
-            var pagesPerFile = Math.Max(1, FixedPagesCount);
-            var estimatedCount = (int)Math.Ceiling((double)PageCount / pagesPerFile);
-            var rangeHint = !string.IsNullOrWhiteSpace(BaseRange) && BaseRange != "1-z" && BaseRange != $"1-{PageCount}"
-                ? $"在范围 [{BaseRange}] 内，"
-                : "";
-            SplitPreviewText = $"💡 {rangeHint}每 {pagesPerFile} 页为一个文档，预计生成约 {estimatedCount} 个文件（如 _01-05.pdf ...）";
-        }
-    }
+            case SplitMode.FixedPages:
+                var hasScope = !string.IsNullOrWhiteSpace(FixedScopeRange) &&
+                               !FixedScopeRange.Trim().Equals("1-z", StringComparison.OrdinalIgnoreCase);
+                return new QpdfJob
+                {
+                    InputFile = hasScope ? null : InputPath,
+                    Empty = hasScope ? "" : null,
+                    OutputFile = OutputPath,
+                    Password = hasScope ? null : InputPassword,
+                    SplitPages = Math.Max(1, FixedPagesCount).ToString(),
+                    Pages = hasScope
+                        ? [new PagesSpec { File = InputPath, Range = FixedScopeRange.Trim(), Password = InputPassword }]
+                        : null
+                };
 
-    /// <summary>
-    /// 解析逗号/分号分隔的页码范围列表
-    /// </summary>
-    private static List<string> ParseRangeList(string? expression)
-    {
-        if (string.IsNullOrWhiteSpace(expression)) return [];
-        return expression.Split([',', '，', ';', '；', ' '], StringSplitOptions.RemoveEmptyEntries)
-                         .Select(s => s.Trim())
-                         .Where(s => !string.IsNullOrEmpty(s))
-                         .ToList();
-    }
+            case SplitMode.ExtractSingle:
+                var singleRange = string.IsNullOrWhiteSpace(SingleExtractRange) ? "1" : SingleExtractRange.Trim();
+                return new QpdfJob
+                {
+                    Empty = "",
+                    OutputFile = OutputPath,
+                    Pages =
+                    [
+                        new PagesSpec
+                        {
+                            File = InputPath,
+                            Range = PageRange.Normalize(singleRange),
+                            Password = InputPassword
+                        }
+                    ]
+                };
 
-    /// <inheritdoc />
-    public override void UpdateEquivalentCommand()
-    {
-        if (string.IsNullOrWhiteSpace(InputPath))
-        {
-            EquivalentCommand = null;
-            return;
-        }
+            case SplitMode.SplitRanges:
+                var ranges = ParseRanges(CustomRanges);
+                if (ranges.Count == 0) return null;
+                // 为展示等效命令提供首个 Job 示例
+                var firstOut = Path.Combine(OutputDirectory ?? "", $"{Path.GetFileNameWithoutExtension(InputPath)}_{ranges[0].Replace(":", "_")}.pdf");
+                return new QpdfJob
+                {
+                    Empty = "",
+                    OutputFile = firstOut,
+                    Pages =
+                    [
+                        new PagesSpec
+                        {
+                            File = InputPath,
+                            Range = PageRange.Normalize(ranges[0]),
+                            Password = InputPassword
+                        }
+                    ]
+                };
 
-        var pwdArg = !string.IsNullOrWhiteSpace(InputPassword) ? $"--password=\"{InputPassword}\" " : "";
-
-        if (Mode == SplitMode.SplitRanges)
-        {
-            var ranges = ParseRangeList(CustomRanges);
-            if (ranges.Count <= 1)
-            {
-                var r = ranges.Count == 1 ? ranges[0] : "1-z";
-                EquivalentCommand = $"qpdf --empty {pwdArg}--pages \"{InputPath}\" {r} -- \"{OutputPath}\"";
-            }
-            else
-            {
-                var dir = Path.GetDirectoryName(OutputPath) ?? ".";
-                var baseName = Path.GetFileNameWithoutExtension(InputPath);
-                var example = $"qpdf --empty {pwdArg}--pages \"{InputPath}\" {ranges[0]} -- \"{Path.Combine(dir, $"{baseName}_{ranges[0]}.pdf")}\" ... (共 {ranges.Count} 次)";
-                EquivalentCommand = example;
-            }
-        }
-        else
-        {
-            var hasSubRange = !string.IsNullOrWhiteSpace(BaseRange) &&
-                              BaseRange != "1-z" &&
-                              BaseRange != $"1-{PageCount}";
-
-            EquivalentCommand = hasSubRange
-                ? $"qpdf --empty {pwdArg}--pages \"{InputPath}\" {BaseRange} -- --split-pages={FixedPagesCount} \"{OutputPath}\""
-                : $"qpdf \"{InputPath}\" {pwdArg}--split-pages={FixedPagesCount} \"{OutputPath}\"";
+            default:
+                return null;
         }
     }
 
-    /// <inheritdoc />
-    [RelayCommand]
     public override async Task ExecuteAsync()
     {
-        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath)) return;
+        if (IsBusy) return;
 
-        if (Mode == SplitMode.SplitRanges)
+        if (Mode != SplitMode.SplitRanges)
         {
-            var ranges = ParseRangeList(CustomRanges);
-            if (ranges.Count == 0)
+            await base.ExecuteAsync();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(InputPath)) return;
+        var ranges = ParseRanges(CustomRanges);
+        if (ranges.Count == 0) return;
+
+        var targetDir = !string.IsNullOrWhiteSpace(OutputDirectory)
+            ? OutputDirectory
+            : Path.GetDirectoryName(InputPath) ?? Environment.CurrentDirectory;
+
+        if (!Directory.Exists(targetDir))
+        {
+            Directory.CreateDirectory(targetDir);
+        }
+
+        var baseName = Path.GetFileNameWithoutExtension(InputPath);
+
+        await RunPipelineAsync(async (progress, ct) =>
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var allWarnings = new List<string>();
+
+            for (int i = 0; i < ranges.Count; i++)
             {
-                ranges = ["1-z"];
+                ct.ThrowIfCancellationRequested();
+                var r = ranges[i];
+                var safeR = r.Replace(":", "_").Replace("/", "_");
+                var outPath = Path.Combine(targetDir, $"{baseName}_{safeR}.pdf");
+
+                var job = new QpdfJob
+                {
+                    Empty = "",
+                    OutputFile = outPath,
+                    Pages =
+                    [
+                        new PagesSpec
+                        {
+                            File = InputPath,
+                            Range = PageRange.Normalize(r),
+                            Password = InputPassword
+                        }
+                    ]
+                };
+
+                var res = await Runner.RunJobAsync(job, SettingsStore.Current.CustomQpdfPath, null, ct);
+                if (!res.IsCompleted)
+                {
+                    return res;
+                }
+                allWarnings.AddRange(res.Warnings);
+
+                int percent = (int)((i + 1.0) / ranges.Count * 100);
+                progress.Report(percent);
             }
 
-            var targetDir = Path.GetDirectoryName(OutputPath) ?? Path.GetDirectoryName(InputPath) ?? ".";
-            await RunProcessTaskAsync((progress, ct) =>
-                QpdfService.SplitByRangesAsync(InputPath, ranges, targetDir, InputPassword, progress, ct));
-        }
-        else
-        {
-            var hasSubRange = !string.IsNullOrWhiteSpace(BaseRange) &&
-                              BaseRange != "1-z" &&
-                              BaseRange != $"1-{PageCount}";
+            sw.Stop();
+            return new QpdfResult
+            {
+                ExitCode = 0,
+                Duration = sw.Elapsed,
+                OutputFile = targetDir,
+                Warnings = allWarnings,
+                StandardOutput = $"Split into {ranges.Count} files successfully."
+            };
+        });
+    }
 
-            await RunProcessTaskAsync((progress, ct) =>
-                QpdfService.SplitAsync(InputPath, OutputPath, FixedPagesCount, hasSubRange ? BaseRange : null, InputPassword, progress, ct));
-        }
+    private static List<string> ParseRanges(string? expr)
+    {
+        if (string.IsNullOrWhiteSpace(expr)) return [];
+        return expr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .ToList();
     }
 }
-

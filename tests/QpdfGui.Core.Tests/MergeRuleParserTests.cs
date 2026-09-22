@@ -30,7 +30,7 @@ public class MergeRuleParserTests
 
         // 预览文本校验
         var preview = MergeRuleParser.GeneratePreview(segments);
-        Assert.Equal("[1] 第 1-11 页 ➔ [2] 第 1 页 ➔ [1] 第 8-55 页", preview);
+        Assert.Equal("[1] Pages 1-11 ➔ [2] Pages 1 ➔ [1] Pages 8-55", preview);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class MergeRuleParserTests
         // 仅有 2 个文件，却请求了第 3 个文件
         var success = MergeRuleParser.TryParse("3.1-5", 2, out var segments, out var error);
         Assert.False(success);
-        Assert.Contains("当前仅有 2 个文件", error);
+        Assert.Contains("File index [3]", error);
     }
 
     [Fact]
@@ -87,6 +87,6 @@ public class MergeRuleParserTests
         // 范围非法
         var success = MergeRuleParser.TryParse("1.abc", 2, out var segments, out var error);
         Assert.False(success);
-        Assert.Contains("不合法", error);
+        Assert.Contains("Invalid page range", error);
     }
 }

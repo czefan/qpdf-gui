@@ -20,7 +20,7 @@ public record MergeRuleSegment
     /// <summary>
     /// 友好的人性化描述（用于界面实时预览）
     /// </summary>
-    public string DisplayText => Range == "1-z" ? $"[{FileIndex}] 全部" : $"[{FileIndex}] 第 {Range} 页";
+    public string DisplayText => Range == "1-z" ? $"[{FileIndex}] All" : $"[{FileIndex}] Pages {Range}";
 }
 
 /// <summary>
@@ -55,7 +55,7 @@ public static class MergeRuleParser
 
         if (fileCount <= 0)
         {
-            errorMessage = "请先添加待合并的 PDF 文件";
+            errorMessage = "Please add PDF files first.";
             return false;
         }
 
@@ -75,7 +75,7 @@ public static class MergeRuleParser
             {
                 if (pureFileIndex < 1 || pureFileIndex > fileCount)
                 {
-                    errorMessage = $"文件序号 [{pureFileIndex}] 不存在，当前仅有 {fileCount} 个文件";
+                    errorMessage = $"File index [{pureFileIndex}] out of range (total {fileCount} files).";
                     return false;
                 }
                 segments.Add(new MergeRuleSegment { FileIndex = pureFileIndex, Range = "1-z" });
@@ -86,14 +86,14 @@ public static class MergeRuleParser
             int dotIndex = token.IndexOf('.');
             if (dotIndex <= 0 || dotIndex >= token.Length - 1)
             {
-                errorMessage = $"无效的合并规则语法：'{token}'。示例格式：1.1-11, 2.1, 1.8-55";
+                errorMessage = $"Invalid merge rule syntax: '{token}'. Expected format: 1.1-11, 2.1, 1.8-55";
                 return false;
             }
 
             var fileIndexStr = token[..dotIndex].Trim();
             if (!int.TryParse(fileIndexStr, out int fileIndex) || fileIndex < 1 || fileIndex > fileCount)
             {
-                errorMessage = $"文件序号 [{fileIndexStr}] 无效或超出范围，当前仅有 {fileCount} 个文件";
+                errorMessage = $"File index [{fileIndexStr}] is invalid or out of range (total {fileCount} files).";
                 return false;
             }
 
@@ -102,7 +102,7 @@ public static class MergeRuleParser
 
             if (!PageRange.TryValidate(normalizedRange, out var pageRangeErr))
             {
-                errorMessage = $"文件 [{fileIndex}] 的页码范围 '{rawRange}' 不合法：{pageRangeErr}";
+                errorMessage = $"Invalid page range '{rawRange}' for file [{fileIndex}]: {pageRangeErr}";
                 return false;
             }
 
@@ -115,7 +115,7 @@ public static class MergeRuleParser
 
         if (segments.Count == 0)
         {
-            errorMessage = "未解析到有效的合并规则项";
+            errorMessage = "No valid merge rules found.";
             return false;
         }
 

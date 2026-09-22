@@ -32,4 +32,18 @@ public record QpdfResult
     /// 是否发生错误
     /// </summary>
     public bool HasError => !IsCompleted;
+
+    /// <summary>
+    /// 精简错误摘要（取 stderr 最后一行非空内容，剥离路径前缀）
+    /// </summary>
+    public string? ErrorText
+    {
+        get
+        {
+            if (IsCompleted) return null;
+            if (Errors.Count > 0) return Errors[^1];
+            var lines = StandardError.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return lines.Length > 0 ? lines[^1] : null;
+        }
+    }
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CliWrap;
 using CliWrap.Buffered;
 using QpdfGui.Core.Process;
@@ -5,7 +6,7 @@ using QpdfGui.Core.Process;
 namespace QpdfGui.Core.Inspect;
 
 /// <summary>
-/// PDF 文件轻量探查服务
+/// PDF 文件轻量探查服务（双进程探测加密与页数）
 /// </summary>
 public class PdfInspector
 {
@@ -17,7 +18,7 @@ public class PdfInspector
     }
 
     /// <summary>
-    /// 探查 PDF 页数与加密信息
+    /// 探查 PDF 页数与加密信息（最多 2 次进程执行）
     /// </summary>
     public async Task<PdfInfo> InspectAsync(string filePath, string? password = null, CancellationToken ct = default)
     {
@@ -26,7 +27,7 @@ public class PdfInspector
             return new PdfInfo
             {
                 FilePath = filePath,
-                ErrorMessage = $"文件不存在：{filePath}"
+                ErrorMessage = $"File not found: {filePath}"
             };
         }
 
@@ -36,77 +37,115 @@ public class PdfInspector
             return new PdfInfo
             {
                 FilePath = filePath,
-                ErrorMessage = "未检测到 qpdf 可执行文件。"
+                ErrorMessage = "QPDF executable not found."
             };
         }
 
         try
         {
-            // 1. 探测是否加密 (ExitCode 0 = 加密, 2 = 未加密)
-            var encCheck = await Cli.Wrap(qpdfExe)
-                .WithArguments(args => args.Add("--is-encrypted").Add(filePath))
-                .WithValidation(CommandResultValidation.None)
-                .ExecuteBufferedAsync(ct);
-
-            var isEncrypted = encCheck.ExitCode == 0;
-
-            // 2. 探测是否需要密码才能打开 (ExitCode 0 = 需要密码, 2 = 不需要)
-            var reqPassCheck = await Cli.Wrap(qpdfExe)
-                .WithArguments(args => args.Add("--requires-password").Add(filePath))
-                .WithValidation(CommandResultValidation.None)
-                .ExecuteBufferedAsync(ct);
-
-            var requiresPassword = reqPassCheck.ExitCode == 0;
-
-            // 3. 读取总页数
-            var pageResult = await Cli.Wrap(qpdfExe)
-                .WithArguments(args =>
-                {
-                    if (!string.IsNullOrWhiteSpace(password))
-                    {
-                        args.Add($"--password={password}");
-                    }
-                    args.Add("--show-npages").Add(filePath);
-                })
-                .WithValidation(CommandResultValidation.None)
-                .ExecuteBufferedAsync(ct);
-
-            int pageCount = 0;
-            string? errorMessage = null;
-
-            if (pageResult.ExitCode == 0 && int.TryParse(pageResult.StandardOutput.Trim(), out var parsedCount))
+            // 进程 1：一次性获取加密结构状态
+            var encArgs = new List<string>();
+            if (!string.IsNullOrEmpty(password))
             {
-                pageCount = parsedCount;
+                encArgs.Add($"--password={password}");
             }
-            else if (requiresPassword && string.IsNullOrWhiteSpace(password))
+            encArgs.Add("--json");
+            encArgs.Add("--json-key=encrypt");
+            encArgs.Add(filePath);
+
+            var encExec = await Cli.Wrap(qpdfExe)
+                .WithArguments(encArgs)
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync(ct);
+
+            bool isEncrypted = false;
+            bool requiresPassword = false;
+            string? encDetails = null;
+
+            if (encExec.ExitCode == 2 && encExec.StandardError.Contains("invalid password", StringComparison.OrdinalIgnoreCase))
             {
-                // 需要密码且尚未提供
-                errorMessage = "该文件已设置打开密码，请输入密码后重试。";
+                isEncrypted = true;
+                requiresPassword = true;
+            }
+            else if (encExec.ExitCode == 0)
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(encExec.StandardOutput);
+                    if (doc.RootElement.TryGetProperty("encrypt", out var encProp))
+                    {
+                        if (encProp.TryGetProperty("encrypted", out var encryptedElem))
+                        {
+                            isEncrypted = encryptedElem.GetBoolean();
+                        }
+
+                        if (isEncrypted)
+                        {
+                            bool userMatched = false;
+                            if (encProp.TryGetProperty("userpasswordmatched", out var userMatchedElem))
+                            {
+                                userMatched = userMatchedElem.GetBoolean();
+                            }
+
+                            requiresPassword = !userMatched;
+
+                            if (encProp.TryGetProperty("parameters", out var paramsElem))
+                            {
+                                var bits = paramsElem.TryGetProperty("bits", out var b) ? b.GetInt32() : 0;
+                                var method = paramsElem.TryGetProperty("filemethod", out var m) ? m.GetString() : null;
+                                encDetails = bits > 0 ? $"{method ?? "AES"} {bits}-bit" : method;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // 容错处理
+                }
             }
             else
             {
-                errorMessage = string.IsNullOrWhiteSpace(pageResult.StandardError)
-                    ? "无法读取 PDF 页面信息。"
-                    : pageResult.StandardError.Trim();
+                var err = encExec.StandardError.Trim();
+                return new PdfInfo
+                {
+                    FilePath = filePath,
+                    ErrorMessage = string.IsNullOrEmpty(err) ? "Failed to inspect PDF." : err
+                };
             }
 
-            // 4. 若加密，读取加密摘要详情
-            string? encDetails = null;
-            if (isEncrypted)
+            // 进程 2：读取总页数（仅在无需密码或已正确解锁时调用）
+            int pageCount = 0;
+            string? errorMessage = null;
+
+            if (requiresPassword && string.IsNullOrEmpty(password))
             {
-                var encResult = await Cli.Wrap(qpdfExe)
-                    .WithArguments(args =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(password))
-                        {
-                            args.Add($"--password={password}");
-                        }
-                        args.Add("--show-encryption").Add(filePath);
-                    })
+                errorMessage = "Password required.";
+            }
+            else
+            {
+                var pageArgs = new List<string>();
+                if (!string.IsNullOrEmpty(password))
+                {
+                    pageArgs.Add($"--password={password}");
+                }
+                pageArgs.Add("--show-npages");
+                pageArgs.Add(filePath);
+
+                var pageExec = await Cli.Wrap(qpdfExe)
+                    .WithArguments(pageArgs)
                     .WithValidation(CommandResultValidation.None)
                     .ExecuteBufferedAsync(ct);
 
-                encDetails = encResult.StandardOutput.Trim();
+                if (pageExec.ExitCode == 0 && int.TryParse(pageExec.StandardOutput.Trim(), out var parsedCount))
+                {
+                    pageCount = parsedCount;
+                }
+                else
+                {
+                    errorMessage = string.IsNullOrWhiteSpace(pageExec.StandardError)
+                        ? "Failed to get page count."
+                        : pageExec.StandardError.Trim();
+                }
             }
 
             return new PdfInfo

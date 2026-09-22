@@ -22,6 +22,13 @@
                     <SolidColorBrush x:Key="FeedbackWarningBackground" Color="#FFFBE6" />
                     <SolidColorBrush x:Key="FeedbackWarningBorder" Color="#FFE58F" />
                     <SolidColorBrush x:Key="FeedbackWarningForeground" Color="#D48806" />
+                    <SolidColorBrush x:Key="BadgeWarningBackground" Color="#FFFBE6" />
+                    <SolidColorBrush x:Key="BadgeWarningForeground" Color="#D48806" />
+                    <SolidColorBrush x:Key="BadgeDangerBackground" Color="#FFF1F0" />
+                    <SolidColorBrush x:Key="BadgeDangerForeground" Color="#CF1322" />
+                    <SolidColorBrush x:Key="StatusDotSuccess" Color="#52C41A" />
+                    <SolidColorBrush x:Key="StatusDotWarning" Color="#FAAD14" />
+                    <SolidColorBrush x:Key="StatusDotDanger" Color="#F53F3F" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#18181B" />
@@ -38,6 +45,13 @@
                     <SolidColorBrush x:Key="FeedbackWarningBackground" Color="#2B2614" />
                     <SolidColorBrush x:Key="FeedbackWarningBorder" Color="#594B1B" />
                     <SolidColorBrush x:Key="FeedbackWarningForeground" Color="#F7BA1E" />
+                    <SolidColorBrush x:Key="BadgeWarningBackground" Color="#2B2614" />
+                    <SolidColorBrush x:Key="BadgeWarningForeground" Color="#F7BA1E" />
+                    <SolidColorBrush x:Key="BadgeDangerBackground" Color="#2C1618" />
+                    <SolidColorBrush x:Key="BadgeDangerForeground" Color="#F76965" />
+                    <SolidColorBrush x:Key="StatusDotSuccess" Color="#27C346" />
+                    <SolidColorBrush x:Key="StatusDotWarning" Color="#FAAD14" />
+                    <SolidColorBrush x:Key="StatusDotDanger" Color="#F53F3F" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

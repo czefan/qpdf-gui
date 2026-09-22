@@ -6,12 +6,33 @@ using CliWrap.Buffered;
 namespace QpdfGui.Core.Process;
 
 /// <summary>
-/// QPDF 可执行文件三级查找器
+/// 表示探测到的 QPDF 引擎状态信息
+/// </summary>
+public record EngineInfo(bool IsValid, string? ExePath, string? Version, string? ErrorMessage);
+
+/// <summary>
+/// QPDF 可执行文件四级查找器与探活缓存
+/// 查找优先级：
+/// 1. 用户自定义路径 customPath
+/// 2. 本地应用目录 runtimes/{rid}/native/qpdf[.exe]
+/// 3. 用户 LocalAppData 目录 %LocalAppData%/QpdfGui/runtimes/{rid}/native/qpdf[.exe]
+/// 4. 系统环境变量 PATH
 /// </summary>
 public static partial class QpdfLocator
 {
     [GeneratedRegex(@"qpdf version (\d+\.\d+(\.\d+)?)")]
     private static partial Regex VersionRegex();
+
+    private static EngineInfo? _cachedInfo;
+    private static readonly SemaphoreSlim _probeLock = new(1, 1);
+
+    /// <summary>
+    /// 重置引擎探活缓存（在用户更改自定义路径或完成引擎下载后调用）
+    /// </summary>
+    public static void Reset()
+    {
+        _cachedInfo = null;
+    }
 
     /// <summary>
     /// 获取当前系统的 RID（如 win-x64, linux-x64, osx-arm64）
@@ -37,16 +58,13 @@ public static partial class QpdfLocator
     }
 
     /// <summary>
-    /// 根据三级优先级查找 QPDF 可执行路径
-    /// 1. runtimes/{rid}/native/qpdf[.exe]
-    /// 2. 用户自定义路径 customPath
-    /// 3. 系统环境变量 PATH
+    /// 根据四级优先级查找 QPDF 可执行路径
     /// </summary>
     public static string? Locate(string? customPath = null)
     {
         var exeName = OperatingSystem.IsWindows() ? "qpdf.exe" : "qpdf";
 
-        // 1. 自定义优先（若用户显式指定）
+        // 1. 自定义优先（若用户显式指定且存在）
         if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
         {
             return Path.GetFullPath(customPath);
@@ -72,14 +90,7 @@ public static partial class QpdfLocator
             }
         }
 
-        // 备选查找上一层或当前目录
-        var sameDirPath = Path.Combine(baseDir, exeName);
-        if (File.Exists(sameDirPath))
-        {
-            return Path.GetFullPath(sameDirPath);
-        }
-
-        // 3. 查找环境变量 PATH
+        // 4. 查找环境变量 PATH
         var pathEnv = Environment.GetEnvironmentVariable("PATH");
         if (!string.IsNullOrEmpty(pathEnv))
         {
@@ -104,7 +115,7 @@ public static partial class QpdfLocator
     {
         if (!File.Exists(qpdfPath))
         {
-            return (false, null, $"文件不存在：{qpdfPath}");
+            return (false, null, $"File not found: {qpdfPath}");
         }
 
         try
@@ -116,7 +127,7 @@ public static partial class QpdfLocator
 
             if (result.ExitCode != 0)
             {
-                return (false, null, $"执行失败 (ExitCode {result.ExitCode}): {result.StandardError}");
+                return (false, null, $"Execution failed (ExitCode {result.ExitCode}): {result.StandardError}");
             }
 
             var match = VersionRegex().Match(result.StandardOutput);
@@ -130,6 +141,41 @@ public static partial class QpdfLocator
         catch (Exception ex)
         {
             return (false, null, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 定位并探活 QPDF 引擎版本，结果自动缓存
+    /// </summary>
+    public static async Task<EngineInfo> ProbeAsync(string? customPath = null, CancellationToken ct = default)
+    {
+        if (_cachedInfo != null)
+        {
+            return _cachedInfo;
+        }
+
+        await _probeLock.WaitAsync(ct);
+        try
+        {
+            if (_cachedInfo != null)
+            {
+                return _cachedInfo;
+            }
+
+            var exe = Locate(customPath);
+            if (exe == null)
+            {
+                _cachedInfo = new EngineInfo(false, null, null, "QPDF executable not found.");
+                return _cachedInfo;
+            }
+
+            var (isValid, version, error) = await CheckVersionAsync(exe, ct);
+            _cachedInfo = new EngineInfo(isValid, exe, version, error);
+            return _cachedInfo;
+        }
+        finally
+        {
+            _probeLock.Release();
         }
     }
 }

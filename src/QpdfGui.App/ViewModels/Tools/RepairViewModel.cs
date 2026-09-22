@@ -1,59 +1,52 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using QpdfGui.App.Services;
+using QpdfGui.Core.Inspect;
+using QpdfGui.Core.Jobs;
+using QpdfGui.Core.Process;
 using QpdfGui.Core.Services;
 
 namespace QpdfGui.App.ViewModels.Tools;
 
 /// <summary>
 /// PDF 语法修复与 Web 线性化优化 ViewModel
-/// 重新组织 PDF 交叉引用表与对象流，修复语法错误，并可启用线性化以实现网页“边下边看”快速视图
 /// </summary>
-public partial class RepairViewModel : SingleFileToolViewModel
+public partial class RepairViewModel : ToolViewModel
 {
-    /// <summary>
-    /// 是否在修复同时启用线性化（Linearize / Fast Web View）
-    /// </summary>
     [ObservableProperty]
     private bool _linearize = true;
 
-    public RepairViewModel(
-        IQpdfService qpdfService,
-        IDialogService dialogService,
-        SettingsStore settingsStore)
-        : base(qpdfService, dialogService, settingsStore)
-    {
-    }
-
     partial void OnLinearizeChanged(bool value) => UpdateEquivalentCommand();
 
-    /// <inheritdoc />
+    public RepairViewModel(
+        IDialogService dialogService,
+        SettingsStore settingsStore,
+        QpdfRunner? runner = null,
+        PdfInspector? inspector = null)
+        : base(dialogService, settingsStore, runner, inspector)
+    {
+    }
+
     protected override void UpdateDefaultOutputPath()
     {
-        OutputPath = ResolveOutputPathWithSuffix("repaired");
+        if (string.IsNullOrWhiteSpace(InputPath)) return;
+        var dir = SettingsStore.Current.DefaultOutputDirectory;
+        OutputPath = OutputPathResolver.ResolveUniquePath(dir, InputPath, "repaired");
     }
 
-    /// <inheritdoc />
-    public override void UpdateEquivalentCommand()
+    public override QpdfJob? BuildJob()
     {
-        if (string.IsNullOrWhiteSpace(InputPath))
+        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath))
         {
-            EquivalentCommand = null;
-            return;
+            return null;
         }
 
-        var linArg = Linearize ? " --linearize" : "";
-        var pwdArg = !string.IsNullOrWhiteSpace(InputPassword) ? $"--password=\"{InputPassword}\" " : "";
-        EquivalentCommand = $"qpdf {pwdArg}\"{InputPath}\" --object-streams=generate{linArg} \"{OutputPath}\"";
-    }
-
-    /// <inheritdoc />
-    [RelayCommand]
-    public override async Task ExecuteAsync()
-    {
-        if (string.IsNullOrWhiteSpace(InputPath) || string.IsNullOrWhiteSpace(OutputPath)) return;
-
-        await RunProcessTaskAsync((progress, ct) =>
-            QpdfService.RepairAsync(InputPath, OutputPath, InputPassword, progress, ct));
+        return new QpdfJob
+        {
+            InputFile = InputPath,
+            OutputFile = OutputPath,
+            Password = InputPassword,
+            ObjectStreams = "generate",
+            Linearize = Linearize ? "" : null
+        };
     }
 }

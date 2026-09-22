@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:QpdfGui.App.ViewModels.Tools"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="QpdfGui.App.Views.Controls.InputFileCard"
+             x:DataType="tools:ToolViewModel">
+    <Border Classes="ContentCard">
+        <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{DynamicResource Input_SelectFile}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Command="{Binding ClearFileCommand}" ToolTip.Tip="清除文件"
+                        Theme="{DynamicResource BorderlessButtonTheme}" IsVisible="{Binding HasInputFile}">
+                    <ic:SymbolIcon Symbol="Dismiss" FontSize="14" />
+                </Button>
+            </Grid>
+
+            <!-- 未选文件时的虚线热区 -->
+            <Border Classes="DropZone" IsVisible="{Binding !HasInputFile}">
+                <Button Command="{Binding SelectInputCommand}" Classes="GhostDropZone">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ic:SymbolIcon Symbol="ArrowUpload" FontSize="30" Foreground="{DynamicResource SemiColorPrimary}" />
+                        <TextBlock Text="{DynamicResource Input_DropHint}" FontSize="13.5" FontWeight="Medium" />
+                    </StackPanel>
+                </Button>
+            </Border>
+
+            <!-- 已选文件摘要展示 -->
+            <StackPanel Spacing="12" IsVisible="{Binding HasInputFile}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <ic:SymbolIcon Symbol="DocumentPdf" FontSize="28" Foreground="{DynamicResource SemiColorPrimary}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                        <TextBlock Text="{Binding FileName}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding FileSizeDisplay}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                            <TextBlock Text="•" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                            <TextBlock Text="{Binding PageCount, StringFormat='共 {0} 页'}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                            <Border Background="{DynamicResource BadgeWarningBackground}" CornerRadius="4" Padding="6,1" IsVisible="{Binding IsEncrypted}">
+                                <TextBlock Text="{DynamicResource Input_Encrypted}" FontSize="11" Foreground="{DynamicResource BadgeWarningForeground}" />
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Grid.Column="2" Command="{Binding SelectInputCommand}" Content="{DynamicResource Input_ChangeFile}"
+                            Theme="{DynamicResource BorderlessButtonTheme}" VerticalAlignment="Center" />
+                </Grid>
+
+                <!-- 密码输入提示（如加密且需密码） -->
+                <Border Background="{DynamicResource DropZoneBackgroundBrush}" CornerRadius="6" Padding="12,8"
+                        IsVisible="{Binding RequiresPassword}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Text="{DynamicResource Input_PasswordPrompt}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="12.5" />
+                        <TextBox Grid.Column="1" Text="{Binding InputPassword}" PasswordChar="•"
+                                 PlaceholderText="{DynamicResource Input_PasswordPlaceholder}"
+                                 Classes="clearButton" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Command="{Binding SubmitPasswordCommand}" Content="确定" Margin="8,0,0,0" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

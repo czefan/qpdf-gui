@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,7 +27,7 @@ jobs:
       - name: Determine semantic version
         shell: pwsh
         run: |
-          $ver = if ($env:GITHUB_REF -like "refs/tags/v*") { $env:GITHUB_REF -replace "refs/tags/v", "" } else { "0.1.0" }
+          $ver = $env:GITHUB_REF -replace "refs/tags/v", ""
           Write-Host "Publishing as version: $ver"
           echo "APP_VERSION=$ver" >> $env:GITHUB_ENV
 
@@ -40,6 +39,7 @@ jobs:
           --self-contained true
           -p:Version=${{ env.APP_VERSION }}
           -p:PublishSingleFile=true
+          -p:PublishReadyToRun=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -p:EnableCompressionInSingleFile=true
           -p:DebugType=none

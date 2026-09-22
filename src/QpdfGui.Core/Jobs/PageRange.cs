@@ -21,14 +21,14 @@ public static partial class PageRange
     {
         if (string.IsNullOrWhiteSpace(expression))
         {
-            errorMessage = "页面范围不能为空";
+            errorMessage = "Page range cannot be empty.";
             return false;
         }
 
         var parts = expression.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
         {
-            errorMessage = "页面范围不能为空";
+            errorMessage = "Page range cannot be empty.";
             return false;
         }
 
@@ -37,7 +37,7 @@ public static partial class PageRange
             var trimmed = part.Trim();
             if (!SingleRangeRegex().IsMatch(trimmed))
             {
-                errorMessage = $"无效的页码范围表达式：'{trimmed}'。支持格式如 1-5, z, 1-z:even, r1。";
+                errorMessage = $"Invalid page range expression: '{trimmed}'. Supported formats: 1-5, z, 1-z:even, r1.";
                 return false;
             }
         }

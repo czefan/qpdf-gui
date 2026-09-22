@@ -173,8 +173,8 @@
                                     <Border Grid.Column="1" Background="{DynamicResource SemiColorFill0}"
                                             CornerRadius="12" Padding="10,4" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="#52C41A" IsVisible="{Binding IsQpdfValid}" />
-                                            <Ellipse Width="6" Height="6" Fill="#FAAD14" IsVisible="{Binding !IsQpdfValid}" />
+                                            <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotSuccess}" IsVisible="{Binding IsQpdfValid}" />
+                                            <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotWarning}" IsVisible="{Binding !IsQpdfValid}" />
                                             <TextBlock Text="{Binding QpdfVersion}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Border>

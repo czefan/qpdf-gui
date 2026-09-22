@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:tools="using:QpdfGui.App.ViewModels.Tools"
+             xmlns:controls="using:QpdfGui.App.Views.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="QpdfGui.App.Views.Controls.RunPanel"
+             x:DataType="tools:ToolViewModel">
+    <StackPanel Spacing="10">
+        <!-- 操作按钮与取消 -->
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Command="{Binding ExecuteCommand}"
+                        Content="{Binding $parent[controls:RunPanel].ActionContent}"
+                        Theme="{DynamicResource SolidButtonTheme}"
+                        Classes="Primary"
+                        IsEnabled="{Binding CanExecute}"
+                        Padding="28,8" FontSize="14" FontWeight="Medium" />
+                <Button Command="{Binding CopyCommandCommand}"
+                        ToolTip.Tip="{Binding EquivalentCommand}"
+                        IsEnabled="{Binding EquivalentCommand, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                        Theme="{DynamicResource BorderlessButtonTheme}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Panel>
+                            <ic:SymbolIcon Symbol="Copy" FontSize="16" IsVisible="{Binding !IsCopied}" />
+                            <ic:SymbolIcon Symbol="Checkmark" FontSize="16" Foreground="{DynamicResource SemiColorSuccess}" IsVisible="{Binding IsCopied}" />
+                        </Panel>
+                        <TextBlock Text="{DynamicResource Btn_CopyCommand}" VerticalAlignment="Center" IsVisible="{Binding !IsCopied}" />
+                        <TextBlock Text="{DynamicResource Action_Copied}" VerticalAlignment="Center" Foreground="{DynamicResource SemiColorSuccess}" IsVisible="{Binding IsCopied}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <Button Grid.Column="2" Command="{Binding CancelCommand}"
+                    Content="{DynamicResource Btn_Cancel}"
+                    IsVisible="{Binding IsBusy}"
+                    Theme="{DynamicResource BorderlessButtonTheme}" />
+        </Grid>
+
+        <!-- 进度条 -->
+        <ProgressBar Value="{Binding ProgressPercentage}" Maximum="100"
+                     IsVisible="{Binding IsBusy}" Height="4" />
+
+        <!-- 成功反馈面板 -->
+        <Border Classes="ContentCard" Background="{DynamicResource BadgeSuccessBackground}"
+                BorderBrush="{DynamicResource BadgeSuccessForeground}"
+                IsVisible="{Binding HasSuccessResult}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="24" Foreground="{DynamicResource BadgeSuccessForeground}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold" Foreground="{DynamicResource BadgeSuccessForeground}" FontSize="13.5" />
+                    <TextBlock Text="{Binding LastOutputFilePath}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Command="{Binding OpenFileCommand}" Content="{DynamicResource Btn_OpenFile}" />
+                    <Button Command="{Binding OpenFolderCommand}" Content="{DynamicResource Btn_OpenFolder}" />
+                    <Button Command="{Binding CopyCommandCommand}" Content="{DynamicResource Btn_CopyCommand}"
+                            Theme="{DynamicResource BorderlessButtonTheme}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 诊断与提示警告记录面板（无硬编码中文，彻底支持英汉双语） -->
+        <Border Classes="ContentCard" Background="{DynamicResource FeedbackWarningBackground}"
+                BorderBrush="{DynamicResource FeedbackWarningBorder}"
+                IsVisible="{Binding HasWarnings}">
+            <StackPanel Spacing="6">
+                <TextBlock Text="{DynamicResource Status_WarningsTitle}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource FeedbackWarningForeground}" FontSize="13" />
+                <ItemsControl ItemsSource="{Binding Warnings}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" FontSize="11.5"
+                                       Foreground="{DynamicResource SemiColorText1}"
+                                       TextWrapping="Wrap" Margin="0,2" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- 错误反馈面板 -->
+        <Border Classes="ContentCard" Background="{DynamicResource FeedbackErrorBackground}"
+                BorderBrush="{DynamicResource FeedbackErrorBorder}"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource Status_ErrorsTitle}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource FeedbackErrorForeground}" FontSize="13" />
+                <TextBlock Text="{Binding ErrorMessage}" FontSize="12"
+                           Foreground="{DynamicResource FeedbackErrorText}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

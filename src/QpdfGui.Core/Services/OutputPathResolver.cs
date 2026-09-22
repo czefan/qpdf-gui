@@ -24,11 +24,6 @@ public static class OutputPathResolver
             ? targetDirectory
             : Path.GetDirectoryName(baseFileName) ?? Environment.CurrentDirectory;
 
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-
         var candidateName = string.IsNullOrWhiteSpace(operationSuffix)
             ? $"{nameWithoutExt}{ext}"
             : $"{nameWithoutExt}_{operationSuffix}{ext}";
@@ -65,11 +60,6 @@ public static class OutputPathResolver
         var dir = !string.IsNullOrWhiteSpace(targetDirectory)
             ? targetDirectory
             : Path.GetDirectoryName(baseFileName) ?? Environment.CurrentDirectory;
-
-        if (!Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
 
         return Path.Combine(dir, $"{nameWithoutExt}_page_%d.pdf");
     }
