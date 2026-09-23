@@ -223,6 +223,17 @@ public class UpdateService : IUpdateService
                 var latestTag = release.TagName.TrimStart('v', 'V');
                 var currentClean = (currentQpdfVersion ?? string.Empty).Trim().TrimStart('v', 'V');
 
+                if (string.IsNullOrWhiteSpace(currentClean))
+                {
+                    return new EngineUpdateCheckResult
+                    {
+                        HasUpdate = true,
+                        LatestVersion = release.TagName,
+                        ReleaseUrl = release.HtmlUrl,
+                        Message = $"官方最新版本为 {release.TagName}（未检测到本地引擎）"
+                    };
+                }
+
                 if (Version.TryParse(latestTag, out var latestVer) && Version.TryParse(currentClean, out var curVer))
                 {
                     if (latestVer > curVer)
@@ -232,7 +243,7 @@ public class UpdateService : IUpdateService
                             HasUpdate = true,
                             LatestVersion = release.TagName,
                             ReleaseUrl = release.HtmlUrl,
-                            Message = $"官方最新版本为 {release.TagName}，建议升级"
+                            Message = $"官方最新版本为 {release.TagName}，可升级"
                         };
                     }
                 }
@@ -242,7 +253,7 @@ public class UpdateService : IUpdateService
                     HasUpdate = false,
                     LatestVersion = release.TagName,
                     ReleaseUrl = release.HtmlUrl,
-                    Message = $"官方最新版本 {release.TagName}（引擎已就绪）"
+                    Message = $"当前已是官方最新版本 ({release.TagName})"
                 };
             }
         }

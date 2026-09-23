@@ -95,10 +95,57 @@ public partial class SettingsViewModel : ViewModelBase
     public Action<double>? OnUiScaleChanged { get; set; }
 
     /// <summary>
+    /// 是否使用内置引擎模式（true 为内置引擎，只更新自己的；false 为指定路径，由外部独立管理）
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UseCustomEngine))]
+    [NotifyPropertyChangedFor(nameof(IsUsingCustomPath))]
+    [NotifyPropertyChangedFor(nameof(EngineActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteEngineAction))]
+    [NotifyPropertyChangedFor(nameof(EngineActionDescription))]
+    private bool _useBuiltInEngine = true;
+
+    /// <summary>
+    /// 是否使用指定路径模式（与 UseBuiltInEngine 互斥）
+    /// </summary>
+    public bool UseCustomEngine
+    {
+        get => !UseBuiltInEngine;
+        set => UseBuiltInEngine = !value;
+    }
+
+    partial void OnUseBuiltInEngineChanged(bool value)
+    {
+        if (value) CustomQpdfPath = null;
+    }
+
+    /// <summary>
     /// 用户配置的手动指定 QPDF 可执行文件路径
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsUsingCustomPath))]
+    [NotifyPropertyChangedFor(nameof(EngineActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteEngineAction))]
+    [NotifyPropertyChangedFor(nameof(EngineActionDescription))]
     private string? _customQpdfPath;
+
+    /// <summary>
+    /// 是否正使用外部自定义 QPDF 路径（若为 true 则由外部独立管理，软件不自动下载覆盖）
+    /// </summary>
+    public bool IsUsingCustomPath => !string.IsNullOrWhiteSpace(CustomQpdfPath);
+
+    partial void OnCustomQpdfPathChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value) && UseBuiltInEngine)
+        {
+            UseBuiltInEngine = false;
+        }
+
+        _settingsStore.Current.CustomQpdfPath = value;
+        _settingsStore.Save();
+        QpdfLocator.Reset();
+        _ = RefreshQpdfStatusAsync();
+    }
 
     /// <summary>
     /// 系统探查定位到的最终 QPDF 可执行文件真实物理路径
@@ -186,20 +233,16 @@ public partial class SettingsViewModel : ViewModelBase
     /// 当前选中的设置二级分类
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGeneralSection))]
+    [NotifyPropertyChangedFor(nameof(IsAppearanceSection))]
+    [NotifyPropertyChangedFor(nameof(IsEngineSection))]
+    [NotifyPropertyChangedFor(nameof(IsAboutSection))]
     private SettingsSection _currentSection = SettingsSection.General;
 
     public bool IsGeneralSection => CurrentSection == SettingsSection.General;
     public bool IsAppearanceSection => CurrentSection == SettingsSection.Appearance;
     public bool IsEngineSection => CurrentSection == SettingsSection.Engine;
     public bool IsAboutSection => CurrentSection == SettingsSection.About;
-
-    partial void OnCurrentSectionChanged(SettingsSection value)
-    {
-        OnPropertyChanged(nameof(IsGeneralSection));
-        OnPropertyChanged(nameof(IsAppearanceSection));
-        OnPropertyChanged(nameof(IsEngineSection));
-        OnPropertyChanged(nameof(IsAboutSection));
-    }
 
     /// <summary>
     /// 切换二级设置分类
@@ -219,22 +262,27 @@ public partial class SettingsViewModel : ViewModelBase
     public string AppVersion => _updateService.CurrentAppVersion;
 
     /// <summary>
-    /// 是否正在聚合检查更新
-    /// </summary>
-    [ObservableProperty]
-    private bool _isCheckingAnyUpdate;
-
-    /// <summary>
     /// 是否正在检查软件自身更新
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AppActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteAppAction))]
     private bool _isCheckingAppUpdate;
 
     /// <summary>
     /// 软件自身更新检查反馈消息
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AppStatusDescription))]
     private string? _appUpdateStatusMessage;
+
+    /// <summary>
+    /// 客户端状态描述文本：未检查时展示软件简述，检查后展示更新状态反馈
+    /// </summary>
+    public string AppStatusDescription =>
+        !string.IsNullOrWhiteSpace(AppUpdateStatusMessage)
+            ? AppUpdateStatusMessage
+            : LocalizationManager.GetString("Settings_ClientAppDesc");
 
     /// <summary>
     /// 最新版本的发布链接
@@ -258,12 +306,16 @@ public partial class SettingsViewModel : ViewModelBase
     /// 是否发现软件新版本
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AppActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteAppAction))]
     private bool _hasAppUpdate;
 
     /// <summary>
     /// 是否正在下载软件新版
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AppActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteAppAction))]
     private bool _isDownloadingApp;
 
     /// <summary>
@@ -279,15 +331,29 @@ public partial class SettingsViewModel : ViewModelBase
     private string? _appDownloadStatusText;
 
     /// <summary>
+    /// 客户端更新操作按钮文案：未检查/最新为“检查更新”，查到新版本为“下载最新版”，下载中为“正在下载...”
+    /// </summary>
+    public string AppActionButtonText =>
+        IsDownloadingApp ? LocalizationManager.GetString("Settings_Downloading") :
+        IsCheckingAppUpdate ? LocalizationManager.GetString("Settings_CheckingUpdate") :
+        HasAppUpdate ? LocalizationManager.GetString("Settings_DownloadLatest") :
+        LocalizationManager.GetString("Settings_CheckUpdate");
+
+    public bool CanExecuteAppAction => !IsCheckingAppUpdate && !IsDownloadingApp;
+
+    /// <summary>
     /// 是否正在检查 QPDF 引擎更新
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EngineActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteEngineAction))]
     private bool _isCheckingQpdfUpdate;
 
     /// <summary>
     /// QPDF 引擎更新检查反馈消息
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EngineActionDescription))]
     private string? _qpdfUpdateStatusMessage;
 
     /// <summary>
@@ -300,6 +366,9 @@ public partial class SettingsViewModel : ViewModelBase
     /// 是否发现 QPDF 引擎新版本
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EngineActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanExecuteEngineAction))]
+    [NotifyPropertyChangedFor(nameof(EngineActionDescription))]
     private bool _hasQpdfUpdate;
 
     /// <summary>
@@ -320,6 +389,27 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string? _engineDownloadStatusText;
 
+    /// <summary>
+    /// 引擎操作按钮文案：未安装为“一键下载”，已安装为“检查更新”，有新版为“下载最新版”
+    /// </summary>
+    public string EngineActionButtonText =>
+        IsDownloadingEngine ? LocalizationManager.GetString("Settings_Downloading") :
+        IsCheckingQpdfUpdate ? LocalizationManager.GetString("Settings_CheckingUpdate") :
+        !IsQpdfValid ? LocalizationManager.GetString("Banner_DownloadAction") :
+        HasQpdfUpdate ? LocalizationManager.GetString("Settings_DownloadLatest") :
+        LocalizationManager.GetString("Settings_CheckUpdate");
+
+    public bool CanExecuteEngineAction => !IsCheckingQpdfUpdate && !IsDownloadingEngine;
+
+    /// <summary>
+    /// 引擎当前状态与动作提示说明
+    /// </summary>
+    public string EngineActionDescription =>
+        IsDownloadingEngine ? (EngineDownloadStatusText ?? LocalizationManager.GetString("Settings_Downloading")) :
+        !IsQpdfValid ? LocalizationManager.GetString("Settings_EngineNotInstalled") :
+        !string.IsNullOrWhiteSpace(QpdfUpdateStatusMessage) ? QpdfUpdateStatusMessage :
+        LocalizationManager.GetString("Settings_EngineReadyDesc");
+
     public EngineStatusViewModel EngineStatus { get; }
 
     public SettingsViewModel(
@@ -336,6 +426,7 @@ public partial class SettingsViewModel : ViewModelBase
         _updateService = updateService ?? new UpdateService();
 
         _customQpdfPath = _settingsStore.Current.CustomQpdfPath;
+        _useBuiltInEngine = string.IsNullOrWhiteSpace(_customQpdfPath);
         _defaultOutputDirectory = _settingsStore.Current.DefaultOutputDirectory;
         _useCustomOutputDir = !string.IsNullOrWhiteSpace(_defaultOutputDirectory);
 
@@ -345,11 +436,14 @@ public partial class SettingsViewModel : ViewModelBase
             if (e.PropertyName == nameof(EngineStatusViewModel.IsQpdfValid))
             {
                 IsQpdfValid = EngineStatus.IsQpdfValid;
+                OnPropertyChanged(nameof(EngineActionButtonText));
+                OnPropertyChanged(nameof(EngineActionDescription));
                 OnQpdfStatusChanged?.Invoke();
             }
             else if (e.PropertyName == nameof(EngineStatusViewModel.QpdfVersion))
             {
                 QpdfVersion = EngineStatus.QpdfVersion;
+                OnPropertyChanged(nameof(EngineActionDescription));
             }
             else if (e.PropertyName == nameof(EngineStatusViewModel.ResolvedQpdfPath))
             {
@@ -358,6 +452,9 @@ public partial class SettingsViewModel : ViewModelBase
             else if (e.PropertyName == nameof(EngineStatusViewModel.IsDownloading))
             {
                 IsDownloadingEngine = EngineStatus.IsDownloading;
+                OnPropertyChanged(nameof(EngineActionButtonText));
+                OnPropertyChanged(nameof(CanExecuteEngineAction));
+                OnPropertyChanged(nameof(EngineActionDescription));
             }
             else if (e.PropertyName == nameof(EngineStatusViewModel.DownloadProgress))
             {
@@ -366,6 +463,7 @@ public partial class SettingsViewModel : ViewModelBase
             else if (e.PropertyName == nameof(EngineStatusViewModel.DownloadStatusText))
             {
                 EngineDownloadStatusText = EngineStatus.DownloadStatusText;
+                OnPropertyChanged(nameof(EngineActionDescription));
             }
         };
 
@@ -389,6 +487,10 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 theme.RefreshLabel();
             }
+            OnPropertyChanged(nameof(AppActionButtonText));
+            OnPropertyChanged(nameof(AppStatusDescription));
+            OnPropertyChanged(nameof(EngineActionButtonText));
+            OnPropertyChanged(nameof(EngineActionDescription));
         };
         foreach (var theme in AvailableThemes)
         {
@@ -402,42 +504,36 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 统一并发检查客户端和 QPDF 引擎更新
+    /// 客户端更新单一流转主命令：若有新版本则下载安装，否则触发检查更新
     /// </summary>
     [RelayCommand]
-    public async Task CheckAllUpdatesAsync()
+    public async Task ExecuteAppActionAsync()
     {
-        if (IsCheckingAnyUpdate) return;
-        IsCheckingAnyUpdate = true;
-        IsCheckingAppUpdate = true;
-        IsCheckingQpdfUpdate = true;
-        AppUpdateStatusMessage = "正在检查软件最新版本...";
-        QpdfUpdateStatusMessage = "正在检查 QPDF 官方发布...";
-
-        try
+        if (!CanExecuteAppAction) return;
+        if (HasAppUpdate)
         {
-            var result = await _updateService.CheckAllUpdatesAsync(QpdfVersion);
-
-            HasAppUpdate = result.App.HasUpdate;
-            AppReleaseUrl = result.App.ReleaseUrl;
-            AppDownloadUrl = result.App.DownloadUrl;
-            AppDownloadFileName = result.App.AssetName;
-            AppUpdateStatusMessage = result.App.Message;
-
-            HasQpdfUpdate = result.Engine.HasUpdate;
-            QpdfReleaseUrl = result.Engine.ReleaseUrl;
-            QpdfUpdateStatusMessage = result.Engine.Message;
+            await DownloadAndApplyAppUpdateAsync();
         }
-        catch (Exception ex)
+        else
         {
-            AppUpdateStatusMessage = $"检查失败: {ex.Message}";
-            QpdfUpdateStatusMessage = $"检查失败: {ex.Message}";
+            await CheckAppUpdateAsync();
         }
-        finally
+    }
+
+    /// <summary>
+    /// 内置引擎单一流转主命令：若未安装或有新版本则下载安装，否则触发检查更新
+    /// </summary>
+    [RelayCommand]
+    public async Task ExecuteEngineActionAsync()
+    {
+        if (!CanExecuteEngineAction) return;
+        if (!IsQpdfValid || HasQpdfUpdate)
         {
-            IsCheckingAnyUpdate = false;
-            IsCheckingAppUpdate = false;
-            IsCheckingQpdfUpdate = false;
+            await DownloadAndInstallEngineAsync();
+        }
+        else
+        {
+            await CheckQpdfUpdateAsync();
         }
     }
 
@@ -457,7 +553,7 @@ public partial class SettingsViewModel : ViewModelBase
 
         IsDownloadingApp = true;
         AppDownloadProgress = 0.0;
-        AppDownloadStatusText = "正在下载新版本...";
+        AppDownloadStatusText = LocalizationManager.GetString("Settings_Downloading");
         string? extractedDir = null;
 
         try
@@ -465,15 +561,15 @@ public partial class SettingsViewModel : ViewModelBase
             var progress = new Progress<double>(p =>
             {
                 AppDownloadProgress = p;
-                AppDownloadStatusText = $"正在下载新版本: {p:P0}";
+                AppDownloadStatusText = $"{LocalizationManager.GetString("Settings_Downloading")} {p:P0}";
             });
 
             extractedDir = await _updateService.DownloadAndExtractAppUpdateAsync(AppDownloadUrl, progress);
-            AppDownloadStatusText = "新版本准备就绪";
+            AppDownloadStatusText = LocalizationManager.GetString("Update_ReadyTitle");
 
             var confirm = await _dialogService.ConfirmAsync(
-                "更新已就绪",
-                "已成功下载并解压最新版本。\n点击【立即重启更新】将退出当前程序并完成替换重启。\n（下载文件已作为临时数据处理，更新后系统零残留）");
+                LocalizationManager.GetString("Update_ReadyTitle"),
+                LocalizationManager.GetString("Update_ReadyMessage"));
 
             if (confirm)
             {
@@ -482,12 +578,12 @@ public partial class SettingsViewModel : ViewModelBase
             else
             {
                 _updateService.CleanupUpdateSandbox(extractedDir);
-                AppDownloadStatusText = "更新已取消，临时文件已安全清理";
+                AppDownloadStatusText = LocalizationManager.GetString("Update_Canceled");
             }
         }
         catch (Exception ex)
         {
-            AppDownloadStatusText = $"更新失败: {ex.Message}";
+            AppDownloadStatusText = $"{LocalizationManager.GetString("Update_Failed")}: {ex.Message}";
             if (extractedDir != null)
             {
                 _updateService.CleanupUpdateSandbox(extractedDir);
@@ -507,7 +603,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (IsCheckingAppUpdate) return;
         IsCheckingAppUpdate = true;
-        AppUpdateStatusMessage = "正在检查最新版本...";
+        AppUpdateStatusMessage = LocalizationManager.GetString("Settings_CheckingUpdate");
         try
         {
             var result = await _updateService.CheckAppUpdateAsync();
@@ -519,7 +615,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            AppUpdateStatusMessage = $"检查失败: {ex.Message}";
+            AppUpdateStatusMessage = $"{LocalizationManager.GetString("Update_Failed")}: {ex.Message}";
         }
         finally
         {
@@ -535,7 +631,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (IsCheckingQpdfUpdate) return;
         IsCheckingQpdfUpdate = true;
-        QpdfUpdateStatusMessage = "正在检查 QPDF 官方发布...";
+        QpdfUpdateStatusMessage = LocalizationManager.GetString("Settings_CheckingUpdate");
         try
         {
             var result = await _updateService.CheckQpdfEngineUpdateAsync(QpdfVersion);
@@ -545,7 +641,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            QpdfUpdateStatusMessage = $"检查失败: {ex.Message}";
+            QpdfUpdateStatusMessage = $"{LocalizationManager.GetString("Update_Failed")}: {ex.Message}";
         }
         finally
         {
@@ -581,19 +677,25 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// 在默认浏览器中打开 MIT 开源许可协议页面
+    /// </summary>
+    [RelayCommand]
+    public void OpenLicensePage()
+    {
+        _updateService.OpenBrowser("https://github.com/czefan/qpdf-gui/blob/main/LICENSE");
+    }
+
+    /// <summary>
     /// 弹出文件选择对话框供用户手动指定外部 qpdf.exe
     /// </summary>
     [RelayCommand]
     public async Task BrowseCustomQpdfPath()
     {
-        var exe = await _dialogService.OpenFileAsync("选择 QPDF 可执行文件", ["qpdf.exe", "qpdf", "*"]);
+        var exe = await _dialogService.OpenFileAsync(LocalizationManager.GetString("Settings_CustomPath"), ["qpdf.exe", "qpdf", "*"]);
         if (!string.IsNullOrWhiteSpace(exe))
         {
+            UseBuiltInEngine = false;
             CustomQpdfPath = exe;
-            _settingsStore.Current.CustomQpdfPath = exe;
-            _settingsStore.Save();
-            QpdfLocator.Reset();
-            await RefreshQpdfStatusAsync();
         }
     }
 
@@ -601,22 +703,21 @@ public partial class SettingsViewModel : ViewModelBase
     /// 清除用户自定义的 QPDF 路径，重置为自动寻找本地内置或系统 PATH
     /// </summary>
     [RelayCommand]
-    public async Task ResetQpdfPath()
+    public void ResetQpdfPath()
     {
-        CustomQpdfPath = null;
-        _settingsStore.Current.CustomQpdfPath = null;
-        _settingsStore.Save();
-        QpdfLocator.Reset();
-        await RefreshQpdfStatusAsync();
+        UseBuiltInEngine = true;
     }
 
     /// <summary>
-    /// 一键从 GitHub 在线下载并配置 QPDF 核心引擎
+    /// 在线下载并配置/升级内置 QPDF 核心引擎
     /// </summary>
     [RelayCommand]
     public async Task DownloadAndInstallEngineAsync()
     {
         await EngineStatus.DownloadEngine();
+        HasQpdfUpdate = false;
+        QpdfUpdateStatusMessage = null;
+        await RefreshQpdfStatusAsync();
     }
 
     /// <summary>

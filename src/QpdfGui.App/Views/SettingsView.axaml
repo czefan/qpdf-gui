@@ -158,63 +158,77 @@
 
                     <!-- 3. QPDF 运行引擎卡片 -->
                     <StackPanel Spacing="16" IsVisible="{Binding IsEngineSection}">
-                        <!-- 引擎状态与路径管理 -->
+                        <!-- 引擎模式选择与配置卡片 -->
                         <Border Classes="ContentCard">
-                            <StackPanel Spacing="14">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Text="{DynamicResource Settings_Engine}" FontSize="14" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding ResolvedQpdfPath, FallbackValue='未配置'}"
-                                                   FontSize="12" Foreground="{DynamicResource SemiColorText2}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="{DynamicResource Settings_Engine}" FontSize="14" FontWeight="SemiBold" />
 
-                                    <!-- 状态徽章 -->
-                                    <Border Grid.Column="1" Background="{DynamicResource SemiColorFill0}"
-                                            CornerRadius="12" Padding="10,4" VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotSuccess}" IsVisible="{Binding IsQpdfValid}" />
-                                            <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotWarning}" IsVisible="{Binding !IsQpdfValid}" />
-                                            <TextBlock Text="{Binding QpdfVersion}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
+                                <!-- 选项 1：内置引擎 -->
+                                <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="8" Padding="14,12">
+                                    <StackPanel Spacing="10">
+                                        <RadioButton GroupName="EngineModeGroup"
+                                                     IsChecked="{Binding UseBuiltInEngine}"
+                                                     Content="{DynamicResource Settings_EngineMode_BuiltIn}"
+                                                     FontWeight="SemiBold" FontSize="13" />
 
-                                <TextBlock Text="{DynamicResource Settings_CustomPath}" FontSize="12.5" Foreground="{DynamicResource SemiColorText1}" Margin="0,4,0,0" />
-                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                    <TextBox Text="{Binding CustomQpdfPath}"
-                                             PlaceholderText="{DynamicResource Settings_CustomPathPlaceholder}"
-                                             Classes="clearButton" VerticalAlignment="Center" />
-                                    <Button Grid.Column="1" Command="{Binding BrowseCustomQpdfPathCommand}"
-                                            Content="{DynamicResource Output_Browse}" Margin="8,0,0,0" />
-                                    <Button Grid.Column="2" Command="{Binding ResetQpdfPathCommand}"
-                                            Content="{DynamicResource Settings_Reset}" Margin="8,0,0,0"
-                                            Theme="{DynamicResource BorderlessButtonTheme}" />
-                                </Grid>
+                                        <StackPanel Spacing="8" Margin="28,0,0,0" IsEnabled="{Binding UseBuiltInEngine}">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel Spacing="4" VerticalAlignment="Center">
+                                                    <!-- 状态徽章与版本号 -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <Border Background="{DynamicResource SemiColorFill1}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                                <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotSuccess}" IsVisible="{Binding IsQpdfValid}" />
+                                                                <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotWarning}" IsVisible="{Binding !IsQpdfValid}" />
+                                                                <TextBlock Text="{Binding QpdfVersion, FallbackValue='未安装'}" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding ResolvedQpdfPath, FallbackValue=''}"
+                                                                   FontSize="11.5" Foreground="{DynamicResource SemiColorText2}"
+                                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding EngineActionDescription}"
+                                                               FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                                </StackPanel>
 
-                                <!-- 在线一键下载与进度区 -->
-                                <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="6" Padding="12,10" Margin="0,4,0,0">
-                                    <StackPanel Spacing="8">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <StackPanel Spacing="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{DynamicResource Settings_DownloadEngine}" FontSize="13" FontWeight="Medium" />
-                                                <TextBlock Text="从 GitHub Releases 官方源一键静默拉取并配置适配当前系统的预编译组件"
-                                                           FontSize="11.5" Foreground="{DynamicResource SemiColorText2}" />
+                                                <!-- 内置引擎单一流转主按钮（一键下载 / 检查更新 / 下载最新版） -->
+                                                <Button Grid.Column="1"
+                                                        Command="{Binding ExecuteEngineActionCommand}"
+                                                        Content="{Binding EngineActionButtonText}"
+                                                        IsEnabled="{Binding CanExecuteEngineAction}"
+                                                        Theme="{DynamicResource SolidButtonTheme}"
+                                                        Classes="Primary"
+                                                        Padding="14,6" FontSize="12"
+                                                        VerticalAlignment="Center" />
+                                            </Grid>
+
+                                            <!-- 下载进度条 -->
+                                            <StackPanel Spacing="4" IsVisible="{Binding IsDownloadingEngine}">
+                                                <TextBlock Text="{Binding EngineDownloadStatusText}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" />
+                                                <ProgressBar Value="{Binding EngineDownloadProgress}" Minimum="0" Maximum="1" Height="4" CornerRadius="2" />
                                             </StackPanel>
-                                            <Button Grid.Column="1"
-                                                    Command="{Binding DownloadAndInstallEngineCommand}"
-                                                    IsEnabled="{Binding !IsDownloadingEngine}"
-                                                    Content="{DynamicResource Banner_DownloadAction}"
-                                                    Theme="{DynamicResource SolidButtonTheme}"
-                                                    Classes="Primary"
-                                                    Padding="12,6" FontSize="12"
-                                                    VerticalAlignment="Center" />
-                                        </Grid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
 
-                                        <!-- 下载进度条 -->
-                                        <StackPanel Spacing="4" IsVisible="{Binding IsDownloadingEngine}">
-                                            <TextBlock Text="{Binding EngineDownloadStatusText}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" />
-                                            <ProgressBar Value="{Binding EngineDownloadProgress}" Minimum="0" Maximum="1" Height="4" CornerRadius="2" />
+                                <!-- 选项 2：指定路径 -->
+                                <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="8" Padding="14,12">
+                                    <StackPanel Spacing="10">
+                                        <RadioButton GroupName="EngineModeGroup"
+                                                     IsChecked="{Binding UseCustomEngine}"
+                                                     Content="{DynamicResource Settings_EngineMode_Custom}"
+                                                     FontWeight="SemiBold" FontSize="13" />
+
+                                        <StackPanel Spacing="8" Margin="28,0,0,0" IsEnabled="{Binding UseCustomEngine}">
+                                            <TextBlock Text="{DynamicResource Settings_EngineCustomDesc}"
+                                                       FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBox Text="{Binding CustomQpdfPath}"
+                                                         PlaceholderText="{DynamicResource Settings_CustomPathPlaceholder}"
+                                                         Classes="clearButton" VerticalAlignment="Center" />
+                                                <Button Grid.Column="1" Command="{Binding BrowseCustomQpdfPathCommand}"
+                                                        Content="{DynamicResource Output_Browse}" Margin="8,0,0,0" />
+                                            </Grid>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
@@ -222,133 +236,80 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- 4. 关于与版本更新中心卡片 -->
+                    <!-- 4. 关于与版本更新卡片 -->
                     <StackPanel Spacing="16" IsVisible="{Binding IsAboutSection}">
-                        <!-- 统一版本与更新中心卡片 -->
+                        <!-- 客户端软件与更新主卡片（方案 B：单卡片收敛 + 底部精致外链） -->
                         <Border Classes="ContentCard">
                             <StackPanel Spacing="16">
-                                <!-- 头部：应用信息与统一检查更新主按钮 -->
+                                <!-- 头部：图标、名称、版本与唯一更新主按钮 -->
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                                         <Border Width="46" Height="46" Background="{DynamicResource SemiColorPrimaryLight}" CornerRadius="10" VerticalAlignment="Center">
                                             <ic:SymbolIcon Symbol="DocumentPdf" FontSize="26" Foreground="{DynamicResource SemiColorPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
                                         <StackPanel Spacing="4" VerticalAlignment="Center">
-                                            <TextBlock Text="{DynamicResource Settings_ClientApp}" FontSize="16" FontWeight="SemiBold" />
-                                            <TextBlock Text="Avalonia UI + .NET 10 驱动的跨平台 PDF 批处理工具" FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{DynamicResource Settings_ClientApp}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <Border Background="{DynamicResource SemiColorFill1}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding AppVersion}" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SemiColorPrimary}" />
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding AppStatusDescription}"
+                                                       FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
                                         </StackPanel>
                                     </StackPanel>
 
-                                    <!-- 统一检查更新按钮 -->
-                                    <Button Grid.Column="1" Command="{Binding CheckAllUpdatesCommand}"
-                                            Content="{DynamicResource Settings_CheckAllUpdates}"
+                                    <!-- 客户端单一流转主按钮（检查更新 / 下载最新版） -->
+                                    <Button Grid.Column="1"
+                                            Command="{Binding ExecuteAppActionCommand}"
+                                            Content="{Binding AppActionButtonText}"
+                                            IsEnabled="{Binding CanExecuteAppAction}"
                                             Theme="{DynamicResource SolidButtonTheme}"
                                             Classes="Primary"
-                                            IsEnabled="{Binding !IsCheckingAnyUpdate}"
+                                            Padding="14,6" FontSize="12"
                                             VerticalAlignment="Center" />
                                 </Grid>
 
+                                <!-- 客户端下载进度条（下载中呈现） -->
+                                <StackPanel Spacing="4" IsVisible="{Binding IsDownloadingApp}">
+                                    <TextBlock Text="{Binding AppDownloadStatusText}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" />
+                                    <ProgressBar Value="{Binding AppDownloadProgress}" Minimum="0" Maximum="1" Height="4" CornerRadius="2" />
+                                </StackPanel>
+
                                 <Separator Height="1" Background="{DynamicResource SemiColorFill1}" Margin="0,2" />
 
-                                <!-- 组件更新项列表 -->
-                                <StackPanel Spacing="12">
-                                    <!-- 组件 1：客户端软件 -->
-                                    <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="8" Padding="14,12">
-                                        <StackPanel Spacing="8">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <StackPanel Spacing="4" VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{DynamicResource Settings_ClientApp}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                                        <Border Background="{DynamicResource SemiColorFill1}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding AppVersion}" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource SemiColorPrimary}" />
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding AppUpdateStatusMessage, FallbackValue='点击右上角按钮可一键检查全部组件更新。'}"
-                                                               FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
-                                                </StackPanel>
-
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                    <Button Command="{Binding DownloadAndApplyAppUpdateCommand}"
-                                                            Content="{DynamicResource Settings_UpdateNow}"
-                                                            IsVisible="{Binding HasAppUpdate}"
-                                                            IsEnabled="{Binding !IsDownloadingApp}"
-                                                            Theme="{DynamicResource SolidButtonTheme}"
-                                                            Classes="Primary"
-                                                            Padding="12,6" FontSize="12" />
-                                                    <Button Command="{Binding OpenAppReleasePageCommand}"
-                                                            Content="{DynamicResource Settings_GoToRelease}"
-                                                            IsVisible="{Binding HasAppUpdate}"
-                                                            Theme="{DynamicResource BorderlessButtonTheme}"
-                                                            Padding="8,6" FontSize="12" />
-                                                </StackPanel>
-                                            </Grid>
-
-                                            <!-- 客户端下载进度条 -->
-                                            <StackPanel Spacing="4" IsVisible="{Binding IsDownloadingApp}">
-                                                <TextBlock Text="{Binding AppDownloadStatusText}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" />
-                                                <ProgressBar Value="{Binding AppDownloadProgress}" Minimum="0" Maximum="1" Height="4" CornerRadius="2" />
-                                            </StackPanel>
+                                <!-- 底部微型外链栏 (Footer Links) -->
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <!-- GitHub 链接 -->
+                                    <Button Command="{Binding OpenProjectHomePageCommand}"
+                                            Theme="{DynamicResource BorderlessButtonTheme}"
+                                            Padding="6,4">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Path Width="14" Height="14" Stretch="Uniform"
+                                                  Fill="{DynamicResource SemiColorText2}"
+                                                  Data="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                                            <TextBlock Text="GitHub" FontSize="12" Foreground="{DynamicResource SemiColorText2}" VerticalAlignment="Center" />
                                         </StackPanel>
-                                    </Border>
+                                    </Button>
 
-                                    <!-- 组件 2：QPDF 核心引擎 -->
-                                    <Border Background="{DynamicResource SemiColorFill0}" CornerRadius="8" Padding="14,12">
-                                        <StackPanel Spacing="8">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <StackPanel Spacing="4" VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{DynamicResource Settings_EngineComponent}" FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                                        <Border Background="{DynamicResource SemiColorFill1}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
-                                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                                                <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotSuccess}" IsVisible="{Binding IsQpdfValid}" />
-                                                                <Ellipse Width="6" Height="6" Fill="{DynamicResource StatusDotWarning}" IsVisible="{Binding !IsQpdfValid}" />
-                                                                <TextBlock Text="{Binding QpdfVersion}" FontSize="11.5" FontWeight="Medium" VerticalAlignment="Center" />
-                                                            </StackPanel>
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding QpdfUpdateStatusMessage, FallbackValue='提供底层的原生 PDF 加密、解密与无损处理能力。'}"
-                                                               FontSize="12" Foreground="{DynamicResource SemiColorText2}" />
-                                                </StackPanel>
+                                    <TextBlock Text="·" Foreground="{DynamicResource SemiColorText3}" VerticalAlignment="Center" />
 
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                    <Button Command="{Binding DownloadAndInstallEngineCommand}"
-                                                            Content="{DynamicResource Banner_DownloadAction}"
-                                                            IsVisible="{Binding HasQpdfUpdate}"
-                                                            IsEnabled="{Binding !IsDownloadingEngine}"
-                                                            Theme="{DynamicResource SolidButtonTheme}"
-                                                            Classes="Primary"
-                                                            Padding="12,6" FontSize="12" />
-                                                    <Button Command="{Binding OpenQpdfReleasePageCommand}"
-                                                            Content="{DynamicResource Settings_GoToRelease}"
-                                                            IsVisible="{Binding HasQpdfUpdate}"
-                                                            Theme="{DynamicResource BorderlessButtonTheme}"
-                                                            Padding="8,6" FontSize="12" />
-                                                </StackPanel>
-                                            </Grid>
+                                    <!-- 开源协议 -->
+                                    <Button Command="{Binding OpenLicensePageCommand}"
+                                            Theme="{DynamicResource BorderlessButtonTheme}"
+                                            Padding="6,4">
+                                        <TextBlock Text="MIT License" FontSize="12" Foreground="{DynamicResource SemiColorText2}" VerticalAlignment="Center" />
+                                    </Button>
 
-                                            <!-- 引擎下载进度条 -->
-                                            <StackPanel Spacing="4" IsVisible="{Binding IsDownloadingEngine}">
-                                                <TextBlock Text="{Binding EngineDownloadStatusText}" FontSize="12" Foreground="{DynamicResource SemiColorPrimary}" />
-                                                <ProgressBar Value="{Binding EngineDownloadProgress}" Minimum="0" Maximum="1" Height="4" CornerRadius="2" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Border>
+                                    <TextBlock Text="·" Foreground="{DynamicResource SemiColorText3}" VerticalAlignment="Center" />
+
+                                    <!-- 更新日志 -->
+                                    <Button Command="{Binding OpenAppReleasePageCommand}"
+                                            Theme="{DynamicResource BorderlessButtonTheme}"
+                                            Padding="6,4">
+                                        <TextBlock Text="{DynamicResource Settings_ReleaseNotes}" FontSize="12" Foreground="{DynamicResource SemiColorText2}" VerticalAlignment="Center" />
+                                    </Button>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- 开源协议与项目信息卡片 -->
-                        <Border Classes="ContentCard">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="开源主页与说明" FontSize="14" FontWeight="SemiBold" />
-                                <TextBlock Text="QPDF GUI 是基于 Avalonia UI 与 .NET 10 构建的现代化跨平台桌面应用，基于底层权威 QPDF 引擎提供极速、无损的 PDF 批处理能力。"
-                                           FontSize="12.5" Foreground="{DynamicResource SemiColorText2}" TextWrapping="Wrap" />
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="GitHub 开放源代码仓库" VerticalAlignment="Center" FontSize="13" />
-                                    <Button Grid.Column="1" Command="{Binding OpenProjectHomePageCommand}"
-                                            Content="{DynamicResource Settings_OpenHomepage}"
-                                            Theme="{DynamicResource BorderlessButtonTheme}" />
-                                </Grid>
                             </StackPanel>
                         </Border>
                     </StackPanel>
